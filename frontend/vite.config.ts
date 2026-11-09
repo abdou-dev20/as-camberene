@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   /*
     Relais facultatif du serveur de développement vers une API déjà lancée —
     la pile Docker sur :8080, par exemple — quand on ne veut pas démarrer
-    « npm run dev:server ». Activé seulement si DEV_API_TARGET est défini
+    « npm run dev » depuis backend/. Activé seulement si DEV_API_TARGET est défini
     (dans .env.development.local, ignoré par git) ; le site appelle alors
     son propre domaine, ce qui évite aussi tout souci de CORS.
   */

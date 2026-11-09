@@ -32,7 +32,7 @@ const [command, commandArgs] =
 if (!command) {
   console.error(
     `Rien à exécuter pour « ${name} » : ni version compilée, ni tsx pour lire les sources.\n\n`
-    + 'Deux façons d\'en sortir, depuis server/ :\n'
+    + 'Deux façons d\'en sortir, depuis backend/ :\n'
     + '  npm run build              construit les scripts (recommandé en production)\n'
     + '  npm install --include=dev  réinstalle tsx et les outils de développement'
   );

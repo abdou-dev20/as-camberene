@@ -36,7 +36,7 @@ RUN sed -i \
     conf/httpd.conf \
  && echo 'Include conf/extra/asc-site.conf' >> conf/httpd.conf
 
-COPY deploy/httpd-site.conf conf/extra/asc-site.conf
+COPY httpd-site.conf conf/extra/asc-site.conf
 COPY --from=build /app/dist ./htdocs
 
 # Les fichiers de `public/` sont copiés tels quels par Vite, avec les droits

@@ -1,14 +1,14 @@
 # ==========================================================================
-# ASC Cambérène — service de l'API
+# ASC CambÃ©rÃ¨ne â€” service de l'API
 # ==========================================================================
-# À déposer dans /etc/systemd/system/asc-camberene-api.service puis :
+# Ã€ dÃ©poser dans /etc/systemd/system/asc-camberene-api.service puis :
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now asc-camberene-api
 #   sudo systemctl status asc-camberene-api
 #   sudo journalctl -u asc-camberene-api -f
 
 [Unit]
-Description=API du site ASC Cambérène
+Description=API du site ASC CambÃ©rÃ¨ne
 Documentation=https://github.com/Diilaye/as-camberene
 After=network-online.target mongod.service
 Wants=network-online.target mongod.service
@@ -19,24 +19,24 @@ User=www-data
 Group=www-data
 
 # Le serveur lit son .env depuis le dossier courant (dotenv) : c'est ce
-# répertoire de travail qui le lui donne, sans EnvironmentFile en double.
-WorkingDirectory=/var/www/as-camberene/server
+# rÃ©pertoire de travail qui le lui donne, sans EnvironmentFile en double.
+WorkingDirectory=/var/www/as-camberene/backend
 ExecStart=/usr/bin/node dist/index.js
 
 Restart=on-failure
 RestartSec=5
 
-# Un plantage au démarrage ne doit pas boucler indéfiniment : au-delà de
-# 5 tentatives en 60 s, le service reste arrêté et l'incident se voit.
+# Un plantage au dÃ©marrage ne doit pas boucler indÃ©finiment : au-delÃ  de
+# 5 tentatives en 60 s, le service reste arrÃªtÃ© et l'incident se voit.
 StartLimitBurst=5
 StartLimitIntervalSec=60
 
-# Durcissement. `uploads` est le seul dossier où le service écrit.
+# Durcissement. `uploads` est le seul dossier oÃ¹ le service Ã©crit.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/www/as-camberene/server/uploads
+ReadWritePaths=/var/www/as-camberene/backend/uploads
 
 StandardOutput=journal
 StandardError=journal

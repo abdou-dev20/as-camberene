@@ -21,11 +21,13 @@ echo "→ Récupération des sources"
 git pull --ff-only
 
 echo "→ Dépendances et construction du site"
+cd frontend
 npm ci
 npm run build
+cd ..
 
 echo "→ Dépendances et construction de l'API"
-cd server
+cd backend
 # Les dépendances de développement restent installées : `tsc` construit, et
 # `tsx` fait tourner les scripts d'administration (création de comptes, seed).
 npm ci

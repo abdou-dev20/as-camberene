@@ -297,7 +297,7 @@ Node, tout le reste est du fichier statique.
 ```
 navigateur ──► Apache :443 ──┬─► /api      ──► Node :4100
                              ├─► /uploads  ──► Node :4100
-                             └─► reste     ──► /var/www/as-camberene/dist
+                             └─► reste     ──► /var/www/as-camberene/frontend/dist
                                                         Node ──► MongoDB :27017
 ```
 
@@ -356,11 +356,11 @@ sudo -u www-data git clone git@github.com:Diilaye/as-camberene.git /var/www/as-c
 
 ## 4. Variables d'environnement
 
-Le fichier `server/.env` **n'est pas dans le dépôt** : il porte les secrets et
+Le fichier `backend/.env` **n'est pas dans le dépôt** : il porte les secrets et
 se crée sur le serveur.
 
 ```bash
-cd /var/www/as-camberene/server
+cd /var/www/as-camberene/backend
 sudo -u www-data cp .env.example .env
 
 # Deux secrets distincts, longs, tirés au hasard
@@ -390,13 +390,13 @@ aucun secret, seulement l'URL publique de l'API.
 ## 5. Première construction
 
 ```bash
-cd /var/www/as-camberene
+cd /var/www/as-camberene/frontend
 sudo -u www-data npm ci
-sudo -u www-data npm run build          # → dist/
+sudo -u www-data npm run build          # → frontend/dist/
 
-cd server
+cd ../backend
 sudo -u www-data npm ci
-sudo -u www-data npm run build          # → server/dist/index.js et server/dist-scripts/
+sudo -u www-data npm run build          # → backend/dist/index.js et backend/dist-scripts/
 sudo -u www-data mkdir -p uploads
 ```
 
@@ -460,7 +460,7 @@ court ouvre les deux d'un coup — la direction, qui distribue les rôles, et
 l'administrateur qui tient le contenu au quotidien :
 
 ```bash
-cd /var/www/as-camberene/server
+cd /var/www/as-camberene/backend
 sudo -u www-data npm run bootstrap:admins -- \
   --superadmin direction@ascamberene.sn \
   --admin redaction@ascamberene.sn
@@ -530,7 +530,7 @@ Atlas sauvegarde la base ; les images téléversées, elles, ne vivent que sur l
 VPS :
 
 ```bash
-tar czf /var/backups/uploads-$(date +%F).tgz -C /var/www/as-camberene/server uploads
+tar czf /var/backups/uploads-$(date +%F).tgz -C /var/www/as-camberene/backend uploads
 ```
 
 Le reste — code, dépendances, site construit — se reconstruit depuis le dépôt.
@@ -539,9 +539,9 @@ Le reste — code, dépendances, site construit — se reconstruit depuis le dé
 
 | Symptôme | Où regarder |
 |---|---|
-| Page blanche | `dist/` construit ? `sudo -u www-data npm run build` |
+| Page blanche | `frontend/dist/` construit ? `sudo -u www-data npm run build` |
 | 404 en rechargeant `/admin/...` | `FallbackResource` absent, ou `mod_rewrite` non activé |
 | `/api` renvoie du HTML | `mod_proxy` non activé, ou `ProxyPass` après le repli SPA |
 | 502 sur `/api` | `systemctl status asc-camberene-api` |
 | L'API ne démarre pas | `journalctl -u asc-camberene-api -n 50` — souvent un secret manquant |
-| Images téléversées absentes | droits sur `server/uploads` pour `www-data` |
+| Images téléversées absentes | droits sur `backend/uploads` pour `www-data` |

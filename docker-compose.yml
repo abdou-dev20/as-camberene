@@ -15,7 +15,7 @@ name: asc-camberene
 services:
   api:
     build:
-      context: ./server
+      context: ./backend
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -56,7 +56,7 @@ services:
 
   web:
     build:
-      context: .
+      context: ./frontend
       args:
         # Figée dans le bundle à la construction : changer SITE_URL impose de
         # reconstruire l'image, pas seulement de redémarrer le conteneur.

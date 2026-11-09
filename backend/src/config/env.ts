@@ -15,8 +15,8 @@ const required = (name: string): string => {
       + (envFileFound
         ? `  ${envPath} a été lu, mais ne définit pas ${name}.`
         : `  Aucun fichier ${envPath}.\n`
-          + '  Le créer à partir de server/.env.example, ou lancer la commande'
-          + ' depuis le dossier server/ —\n'
+          + '  Le créer à partir de backend/.env.example, ou lancer la commande'
+          + ' depuis le dossier backend/ —\n'
           + '  sous Docker, la configuration vient de l\'environnement du'
           + ' conteneur : y exécuter la commande.')
     );

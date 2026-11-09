@@ -275,7 +275,7 @@ cmd_restore() {
 }
 
 # Blocage du site : un simple fichier dans le volume `etat`, que la règle de
-# deploy/httpd-site.conf teste à chaque requête. Ni redémarrage ni
+# frontend/httpd-site.conf teste à chaque requête. Ni redémarrage ni
 # reconstruction : l'effet est immédiat, et il survit aux redéploiements.
 cmd_bloquer() {
   require_env_file
