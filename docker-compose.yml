@@ -31,6 +31,11 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?renseigner JWT_REFRESH_SECRET dans .env.docker}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-2h}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-30d}
+      # Compte d'administration créé au démarrage s'il n'existe pas encore ;
+      # un compte déjà en base n'est jamais modifié.
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-}
+      DEFAULT_ADMIN_NAME: ${DEFAULT_ADMIN_NAME:-}
       # Adresse publique du site : les pages d'aperçu de partage composent avec
       # elle les liens et les adresses absolues des images, que les réseaux
       # chargent depuis leurs propres serveurs.

@@ -60,6 +60,15 @@ export const config = {
     dir: path.resolve(__dirname, '../..', process.env.UPLOAD_DIR ?? 'uploads'),
     maxBytes: Number(process.env.UPLOAD_MAX_BYTES ?? 100 * 1024 * 1024),
   },
+  /**
+   * Compte d'administration créé au démarrage s'il n'existe pas encore (voir
+   * lib/defaultAdmin.ts). Facultatif : sans ces variables, rien n'est créé.
+   */
+  defaultAdmin: {
+    email: process.env.DEFAULT_ADMIN_EMAIL?.trim() ?? '',
+    password: process.env.DEFAULT_ADMIN_PASSWORD ?? '',
+    name: process.env.DEFAULT_ADMIN_NAME?.trim() ?? '',
+  },
 };
 
 export default config;

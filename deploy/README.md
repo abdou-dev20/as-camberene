@@ -131,6 +131,15 @@ visiteurs derrière le proxy.
 ./deploy/docker.sh seed          # facultatif : contenu de démonstration
 ```
 
+Autre voie pour le premier compte, sans commande : renseigner
+`DEFAULT_ADMIN_EMAIL` et `DEFAULT_ADMIN_PASSWORD` (10 caractères au moins)
+dans `.env.docker`, ou dans les variables d'environnement de Coolify. L'API
+crée ce super administrateur à son démarrage s'il n'existe pas encore, et ne
+touche jamais à un compte déjà en base : changer ces variables ensuite ne
+change pas le mot de passe. Pour le réattribuer :
+`npm run bootstrap:admins -- --yes --superadmin <email> --superadmin-password <mdp>`
+dans le conteneur.
+
 ### Le script au quotidien
 
 ```

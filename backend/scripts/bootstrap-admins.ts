@@ -7,7 +7,7 @@ import {
   MIN_PASSWORD_LENGTH,
   ensureAccount,
   looksLikeEmail,
-} from './lib/accounts';
+} from '../src/lib/accounts';
 
 const DEFAULT_DOMAIN = 'ascamberene.sn';
 

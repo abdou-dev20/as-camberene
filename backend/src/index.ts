@@ -1,10 +1,12 @@
 import config from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import createApp from './app';
+import { seedDefaultAdmin } from './lib/defaultAdmin';
 
 const start = async (): Promise<void> => {
   await connectDatabase();
   console.log('MongoDB connecté');
+  await seedDefaultAdmin();
 
   const server = createApp().listen(config.port, () => {
     console.log(`API du site ASC Cambérène sur http://localhost:${config.port}`);
