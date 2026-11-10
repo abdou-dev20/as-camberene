@@ -35,13 +35,29 @@ export const createApp = (): Application => {
   app.use(express.urlencoded({ extended: true }));
   app.use(morgan(config.isProduction ? 'combined' : 'dev'));
 
+  // Une page publique coûte une dizaine de lectures, et au Sénégal beaucoup de
+  // visiteurs mobiles partagent la même adresse IP (CGNAT) : les lectures ont
+  // donc un plafond large, les écritures gardent le plafond serré.
+  const tooMany = { success: false, message: 'Trop de requêtes, réessayez plus tard.' };
+  const isRead = (req: express.Request) => req.method === 'GET' || req.method === 'HEAD';
+  app.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 3000,
+      skip: (req) => !isRead(req),
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: tooMany,
+    })
+  );
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000,
       limit: 300,
+      skip: isRead,
       standardHeaders: true,
       legacyHeaders: false,
-      message: { success: false, message: 'Trop de requêtes, réessayez plus tard.' },
+      message: tooMany,
     })
   );
 
