@@ -9,8 +9,11 @@ WORKDIR /app
 
 # Les dépendances sont copiées seules d'abord : tant que package-lock.json ne
 # change pas, Docker réutilise cette couche et l'installation est instantanée.
+# `--include=dev` : TypeScript est une dépendance de développement, et un
+# NODE_ENV=production passé à la construction (Coolify le fait) la ferait
+# sauter — `tsc` serait alors introuvable.
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 COPY tsconfig*.json ./
 COPY src ./src
