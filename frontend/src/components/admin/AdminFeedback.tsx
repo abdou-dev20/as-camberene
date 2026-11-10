@@ -15,7 +15,7 @@ export const AdminError: React.FC<{ error: ApiError | null; onRetry?: () => void
         <p className="font-semibold">{error.fullMessage}</p>
         {error.isNetworkError && (
           <p className="mt-1 text-red-200/70">
-            L’API du site est-elle démarrée ? <code>cd server &amp;&amp; npm run dev</code>
+            L’API du site est-elle démarrée ? <code>cd backend &amp;&amp; npm run dev</code>
           </p>
         )}
       </div>

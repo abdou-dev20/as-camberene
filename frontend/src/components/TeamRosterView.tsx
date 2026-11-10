@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail, MapPin, Phone, Users } from 'lucide-react';
 import teamHero from '../../assets/img/asc-camberene-equipe-2025.webp';
 import { useTeamMembers, useTeams } from '../hooks/useContent';
-import { PLAYER_TEAM_LABELS, TeamMember } from '../types';
+import { TeamMember } from '../types';
 import PageHero from './ui/PageHero';
 import PlayerCard from './ui/PlayerCard';
 import PlayerStatsTable from './ui/PlayerStatsTable';
@@ -57,16 +57,13 @@ const sectionsOfMembers = (members: TeamMember[]) => {
 };
 
 const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
-  const { data: teams, loading: teamsLoading } = useTeams();
-  const { data: members, loading: membersLoading } = useTeamMembers(teamId);
+  const { data: teams } = useTeams();
+  const { data: members } = useTeamMembers(teamId);
 
   const team = useMemo(
     () => teams.find((entry) => entry.slug === teamId),
     [teams, teamId]
   );
-  // Sans fiche dans Admin → Équipes, l'effectif reste affiché : seuls le bilan
-  // et les informations de la fiche manquent.
-  const label = PLAYER_TEAM_LABELS[teamId];
 
   const coach = useMemo(() => {
     const head = members.find(
@@ -82,11 +79,7 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
 
   const players = useMemo(() => members.filter((member) => member.kind === 'player'), [members]);
 
-  if (!team && (teamsLoading || membersLoading)) {
-    return <div className="min-h-screen bg-graphite" />;
-  }
-
-  if (!team && !label && members.length === 0) {
+  if (!team) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-graphite px-4">
         <div className="max-w-md text-center">
@@ -103,6 +96,7 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
     );
   }
 
+  const played = team.stats.wins + team.stats.draws + team.stats.losses;
   const sectionNames = Object.keys(sections);
   const activeEntries: PlayerEntry[] = sections[activeSection as keyof typeof sections] ?? [];
   const isStaff = activeSection === 'Staff';
@@ -111,10 +105,10 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
   return (
     <div className="bg-graphite">
       <PageHero
-        kicker={[team?.subtitle, team?.ageRange].filter(Boolean).join(' · ')}
-        title={team?.name ?? label ?? teamId}
-        description={team?.description ?? ''}
-        image={team?.image || teamHero}
+        kicker={`${team.subtitle} · ${team.ageRange}`}
+        title={team.name}
+        description={team.description}
+        image={team.image || teamHero}
       >
         <Link
           to="/teams"
@@ -129,7 +123,7 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
         <div className="site-container grid gap-6 py-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-white/50">Entraîneur</p>
-            <p className="mt-1 font-extrabold uppercase text-white">{coach || 'À compléter'}</p>
+            <p className="mt-1 font-extrabold uppercase text-white">{coach}</p>
           </div>
           <div>
             <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-white/50">
@@ -145,11 +139,11 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
               <MapPin size={13} className="text-club-yellow" />
               Terrain
             </p>
-            <p className="mt-1 font-extrabold uppercase text-white">{team?.stadium || 'À compléter'}</p>
+            <p className="mt-1 font-extrabold uppercase text-white">{team.stadium}</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-white/50">Entraînements</p>
-            <p className="mt-1 font-extrabold uppercase text-white">{team?.training || 'À compléter'}</p>
+            <p className="mt-1 font-extrabold uppercase text-white">{team.training}</p>
           </div>
         </div>
       </section>
@@ -212,13 +206,12 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
         </div>
       </section>
 
-      {team && (
       <section className="band-charcoal py-12">
         <div className="site-container">
           <h2 className="section-title mb-8">Bilan de la saison</h2>
           <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
             {[
-              { value: team.stats.wins + team.stats.draws + team.stats.losses, label: 'Matchs joués' },
+              { value: played, label: 'Matchs joués' },
               { value: team.stats.wins, label: 'Victoires' },
               { value: team.stats.draws, label: 'Nuls' },
               { value: team.stats.losses, label: 'Défaites' },
@@ -239,7 +232,6 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
           )}
         </div>
       </section>
-      )}
 
       {players.length > 0 && (
         <section className="band-graphite py-12">

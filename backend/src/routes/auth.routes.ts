@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import SiteUser from '../models/SiteUser.model';
 import { issueTokens, verify } from '../lib/tokens';
 import { permissionsOf } from '../lib/roles';
@@ -8,19 +7,6 @@ import { authenticate } from '../middlewares/auth';
 import { loginSchema, refreshSchema, registerSchema } from '../validators/auth';
 
 const router = Router();
-
-/** Ralentit les essais de mots de passe ; une connexion réussie ne compte pas. */
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  skipSuccessfulRequests: true,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Trop de tentatives de connexion, réessayez dans 15 minutes.',
-  },
-});
 
 router.post(
   '/register',
@@ -54,7 +40,6 @@ router.post(
 
 router.post(
   '/login',
-  loginLimiter,
   handler(async (req, res) => {
     const value = await loginSchema.validateAsync(req.body, { stripUnknown: true });
 

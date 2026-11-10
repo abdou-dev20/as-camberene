@@ -41,7 +41,7 @@ const Parametres: React.FC = () => {
         </div>
         <p className="mt-4 text-xs text-white/40">
           Les comptes d’administration se créent depuis le serveur du site :{' '}
-          <code className="text-white/60">cd server &amp;&amp; npm run create:admin -- &lt;email&gt;</code>
+          <code className="text-white/60">cd backend &amp;&amp; npm run create:admin -- &lt;email&gt;</code>
         </p>
       </div>
 

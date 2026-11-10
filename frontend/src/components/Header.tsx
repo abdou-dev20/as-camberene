@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowRight,
   ChevronDown,
-  HandHeart,
   LayoutDashboard,
   LogOut,
   Search,
@@ -321,13 +320,6 @@ const Header: React.FC = () => {
             </button>
 
             <Link
-              to="/dons"
-              className="hidden h-10 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-semibold uppercase text-club-green-dark transition-opacity hover:opacity-70 lg:flex"
-            >
-              <HandHeart size={20} />
-              Faire un don
-            </Link>
-            <Link
               to="/billetterie"
               className="hidden h-10 items-center justify-center gap-3 rounded-full bg-club-yellow px-7 text-sm font-semibold uppercase text-club-green-dark transition-opacity hover:opacity-70 lg:flex"
             >
@@ -347,13 +339,6 @@ const Header: React.FC = () => {
               )}
             </Link>
 
-            <Link
-              to="/dons"
-              aria-label="Faire un don"
-              className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-white text-club-green-dark lg:hidden"
-            >
-              <HandHeart size={15} />
-            </Link>
             <Link
               to="/billetterie"
               aria-label="Billetterie"
@@ -507,13 +492,6 @@ const Header: React.FC = () => {
           </nav>
 
           <div className="mx-auto flex max-w-site flex-col gap-3 px-4 py-8 sm:flex-row lg:px-10">
-            <Link
-              to="/dons"
-              className="flex h-10 items-center justify-center gap-3 rounded-full bg-white px-7 text-sm font-semibold uppercase text-club-green-dark"
-            >
-              <HandHeart size={18} />
-              Faire un don
-            </Link>
             <Link
               to="/billetterie"
               className="flex h-10 items-center justify-center gap-3 rounded-full bg-club-yellow px-7 text-sm font-semibold uppercase text-club-green-dark"

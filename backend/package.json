@@ -1,5 +1,5 @@
 {
-  "name": "asc-camberene-backend",
+  "name": "asc-camberene-server",
   "version": "1.0.0",
   "description": "API éditoriale et comptes du site ASC Cambérène",
   "private": true,

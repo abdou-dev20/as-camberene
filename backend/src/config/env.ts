@@ -58,23 +58,7 @@ export const config = {
     .filter(Boolean),
   upload: {
     dir: path.resolve(__dirname, '../..', process.env.UPLOAD_DIR ?? 'uploads'),
-    maxBytes: Number(process.env.UPLOAD_MAX_BYTES ?? 150 * 1024 * 1024),
-  },
-  /**
-   * Passerelle PayTech, pour les dons.
-   *
-   * Facultative, contrairement aux secrets des jetons : sans clés, le site
-   * démarre et la page des dons annonce qu'ils ne sont pas encore ouverts. Un
-   * serveur qui refuserait de démarrer faute de passerelle priverait tout le
-   * site pour une seule page.
-   *
-   * `env` vaut `test` tant que le compte marchand n'est pas activé : PayTech
-   * simule alors le paiement, et rien n'est débité.
-   */
-  paytech: {
-    apiKey: process.env.PAYTECH_API_KEY?.trim() ?? '',
-    apiSecret: process.env.PAYTECH_API_SECRET?.trim() ?? '',
-    env: process.env.PAYTECH_ENV?.trim() === 'prod' ? ('prod' as const) : ('test' as const),
+    maxBytes: Number(process.env.UPLOAD_MAX_BYTES ?? 100 * 1024 * 1024),
   },
 };
 

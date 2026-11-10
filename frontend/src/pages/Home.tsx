@@ -55,8 +55,6 @@ const Home: React.FC = () => {
 
   const goTo = useCallback(
     (index: number) => {
-      // Sans diapositive, le modulo par zéro donnerait NaN.
-      if (slides.length === 0) return;
       setSlide((index + slides.length) % slides.length);
       setProgress({ current: 0, duration: 0 });
     },
@@ -152,20 +150,18 @@ const Home: React.FC = () => {
           </span>
         </div>
 
-        {active && (
-          <div className="absolute bottom-[3.25rem] left-5 z-20 flex h-[70vh] max-w-[40rem] flex-col justify-center pr-5 lg:left-10">
-            <p className="text-shadow-hero text-xl font-bold uppercase leading-tight text-club-yellow md:text-[26px] lg:text-[32px] lg:leading-10">
-              {active.kicker}
-            </p>
-            <h1 className="text-shadow-hero line-clamp-3 text-3xl font-extrabold uppercase leading-tight text-white md:text-5xl lg:text-[60px] lg:leading-[1.15]">
-              {active.title}
-            </h1>
-            <Link to={active.link} className="btn-yellow mt-8 w-fit">
-              {active.linkLabel}
-              <ChevronRight size={16} />
-            </Link>
-          </div>
-        )}
+        <div className="absolute bottom-[3.25rem] left-5 z-20 flex h-[70vh] max-w-[40rem] flex-col justify-center pr-5 lg:left-10">
+          <p className="text-shadow-hero text-xl font-bold uppercase leading-tight text-club-yellow md:text-[26px] lg:text-[32px] lg:leading-10">
+            {active.kicker}
+          </p>
+          <h1 className="text-shadow-hero line-clamp-3 text-3xl font-extrabold uppercase leading-tight text-white md:text-5xl lg:text-[60px] lg:leading-[1.15]">
+            {active.title}
+          </h1>
+          <Link to={active.link} className="btn-yellow mt-8 w-fit">
+            {active.linkLabel}
+            <ChevronRight size={16} />
+          </Link>
+        </div>
 
         {isVideo && (
           <button

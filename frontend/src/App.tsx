@@ -1,11 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { AuthProvider } from './hooks/AuthProvider';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import LoadingSpinner from './components/LoadingSpinner';
-import LaunchScreen, { isLaunched } from './components/LaunchScreen';
 import Home from './pages/Home';
 import News from './pages/News';
 import Calendrier from './pages/Calendrier';
@@ -31,8 +30,6 @@ import Subscriptions from './pages/Subscriptions';
 import Gallery from './pages/Gallery';
 import AlbumDetail from './pages/AlbumDetail';
 import Billetterie from './pages/Billetterie';
-import Dons from './pages/Dons';
-import DonMerci from './pages/DonMerci';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -54,23 +51,15 @@ import Utilisateurs from './pages/admin/Utilisateurs';
 import StatistiquesAdmin from './pages/admin/StatistiquesAdmin';
 import ContenuSiteAdmin from './pages/admin/ContenuSiteAdmin';
 import JoueurDuMoisAdmin from './pages/admin/JoueurDuMoisAdmin';
-import DonsAdmin from './pages/admin/DonsAdmin';
 import NotFound from './pages/NotFound';
 import { CartProvider } from './hooks/CartProvider';
 
 const InnerApp: React.FC = () => {
-  const { loading, isStaff } = useAuth();
+  const { loading } = useAuth();
   const location = useLocation();
-  const [launched, setLaunched] = useState(() => isLaunched());
-  const handleLaunch = useCallback(() => setLaunched(true), []);
   const isAdminRoute = location.pathname.startsWith('/admin');
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-graphite"><LoadingSpinner /></div>;
-  }
-  // Avant l'ouverture, le public ne voit que l'écran de lancement ; l'équipe
-  // du club garde l'accès à la connexion et à l'administration pour préparer.
-  if (!launched && !isStaff && !isAdminRoute && location.pathname !== '/login') {
-    return <CartProvider><LaunchScreen onLaunch={handleLaunch} /></CartProvider>;
   }
   return (
     <CartProvider>
@@ -103,8 +92,6 @@ const InnerApp: React.FC = () => {
             <Route path="/galerie" element={<Gallery />} />
             <Route path="/galerie/:id" element={<AlbumDetail />} />
             <Route path="/billetterie" element={<Billetterie />} />
-            <Route path="/dons" element={<Dons />} />
-            <Route path="/dons/merci" element={<DonMerci />} />
             <Route path="/login" element={<Login />} />
             <Route path="/inscription" element={<Register />} />
             <Route path="/admin" element={<ProtectedRoute><AdminLayout><Dashboard /></AdminLayout></ProtectedRoute>} />
@@ -124,7 +111,6 @@ const InnerApp: React.FC = () => {
             <Route path="/admin/calendrier" element={<ProtectedRoute permission="matches:write"><AdminLayout><CalendrierAdmin /></AdminLayout></ProtectedRoute>} />
             <Route path="/admin/galerie" element={<ProtectedRoute permission="gallery:write"><AdminLayout><GalerieAdmin /></AdminLayout></ProtectedRoute>} />
             <Route path="/admin/billetterie" element={<ProtectedRoute permission="orders:manage"><AdminLayout><BilletterieAdmin /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/dons" element={<ProtectedRoute permission="orders:manage"><AdminLayout><DonsAdmin /></AdminLayout></ProtectedRoute>} />
             <Route path="/admin/utilisateurs" element={<ProtectedRoute permission="users:manage"><AdminLayout><Utilisateurs /></AdminLayout></ProtectedRoute>} />
             <Route path="/admin/parametres" element={<ProtectedRoute><AdminLayout><Parametres /></AdminLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

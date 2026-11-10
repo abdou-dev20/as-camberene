@@ -39,7 +39,6 @@ import ticketRoutes from './tickets.routes';
 import shareRoutes from './share.routes';
 import settingsRoutes from './settings.routes';
 import playerOfMonthRoutes from './playerOfMonth.routes';
-import donationRoutes from './donations.routes';
 import albumRoutes from './albums.routes';
 
 const router = Router();
@@ -176,8 +175,6 @@ router.use(
 router.use('/orders', orderRoutes);
 
 router.use('/tickets', ticketRoutes);
-
-router.use('/donations', donationRoutes);
 
 router.use('/settings', settingsRoutes);
 

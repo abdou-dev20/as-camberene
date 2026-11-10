@@ -35,7 +35,7 @@ export const errorHandler = (
       LIMIT_FIELD_KEY: 'Nom de champ trop long',
       UNEXPECTED_TYPE: "Format de fichier inattendu",
     };
-    res.status(error.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({
+    res.status(400).json({
       success: false,
       message: messages[error.code] ?? `Échec du téléversement (${error.code})`,
     });

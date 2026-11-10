@@ -42,6 +42,13 @@ const FOOTER_MENU = [
   },
 ];
 
+const POLICY_LINKS = [
+  { name: 'Politique de confidentialité', path: '/privacy' },
+  { name: "Conditions d'utilisation", path: '/terms' },
+  { name: 'Cookies', path: '/cookies' },
+  { name: 'Contact', path: '/contact' },
+];
+
 const Footer: React.FC = () => {
   const settings = useSiteSettings();
   const SOCIALS = socialLinks(settings);
@@ -166,6 +173,19 @@ const Footer: React.FC = () => {
           <p className="text-xs leading-none text-[#808084] md:w-1/2 md:pr-5">
             © 1965-{new Date().getFullYear()} {settings.footerNote}
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-y-1 md:mx-auto">
+            {POLICY_LINKS.map((link, index) => (
+              <React.Fragment key={link.path}>
+                {index > 0 && <span className="mx-2.5 text-xs text-[#bdbbba]">|</span>}
+                <Link
+                  to={link.path}
+                  className="text-xs text-[#bdbbba] transition-opacity hover:opacity-70 hover:underline"
+                >
+                  {link.name}
+                </Link>
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </section>
     </footer>

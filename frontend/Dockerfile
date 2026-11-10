@@ -4,11 +4,14 @@
 # Le site est construit dans une image jetable qui embarque Node, et seul le
 # résultat — des fichiers statiques — part dans l'image finale. L'hôte n'a donc
 # besoin ni de Node ni de npm.
+#
+# Le contexte de construction est la racine du dépôt (voir docker-compose.yml) :
+# c'est ce qui permet de copier aussi deploy/httpd-site.conf.
 
 FROM node:20-alpine AS build
 WORKDIR /app
 
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm ci
 
 # L'adresse de l'API est figée à la construction : Vite l'inscrit dans le
@@ -20,7 +23,7 @@ ENV VITE_SITE_API_URL=$VITE_SITE_API_URL \
     VITE_API_URL=$VITE_API_URL \
     VITE_CLUB_ID=$VITE_CLUB_ID
 
-COPY . .
+COPY frontend/ ./
 RUN npm run build
 
 # --------------------------------------------------------------------------
@@ -36,7 +39,7 @@ RUN sed -i \
     conf/httpd.conf \
  && echo 'Include conf/extra/asc-site.conf' >> conf/httpd.conf
 
-COPY httpd-site.conf conf/extra/asc-site.conf
+COPY deploy/httpd-site.conf conf/extra/asc-site.conf
 COPY --from=build /app/dist ./htdocs
 
 # Les fichiers de `public/` sont copiés tels quels par Vite, avec les droits

@@ -10,11 +10,7 @@ export interface RequestOptions {
   formData?: FormData;
   auth?: boolean;
   signal?: AbortSignal;
-  timeoutMs?: number;
 }
-
-// Un envoi de photo lourde prend des minutes, pas les 15 s d'une requête.
-const UPLOAD_TIMEOUT_MS = 15 * 60 * 1000;
 
 export class ApiError extends Error {
   readonly status: number;
@@ -133,7 +129,7 @@ const createApiClient = ({ baseUrl, tokens, refreshPath }: ClientOptions): ApiCl
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? REQUEST_TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     const relayAbort = () => controller.abort();
     options.signal?.addEventListener('abort', relayAbort);
 
@@ -193,7 +189,7 @@ const createApiClient = ({ baseUrl, tokens, refreshPath }: ClientOptions): ApiCl
     upload: (path, file, field = 'file') => {
       const formData = new FormData();
       formData.append(field, file);
-      return request(path, { method: 'POST', formData, auth: true, timeoutMs: UPLOAD_TIMEOUT_MS });
+      return request(path, { method: 'POST', formData, auth: true });
     },
   };
 };

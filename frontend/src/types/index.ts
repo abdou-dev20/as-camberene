@@ -317,36 +317,3 @@ export interface HistoryEvent {
   image?: string;
   phase?: string;
 }
-
-export const DONATION_STATUSES = ['en_attente', 'payee', 'annulee', 'echouee'] as const;
-export type DonationStatus = (typeof DONATION_STATUSES)[number];
-
-export const DONATION_STATUS_LABELS: Record<DonationStatus, string> = {
-  en_attente: 'En attente',
-  payee: 'Payé',
-  annulee: 'Annulé',
-  echouee: 'Échoué',
-};
-
-/**
- * Don au club, réglé en ligne par PayTech.
- *
- * Le statut ne passe à « payé » que sur la notification signée de PayTech :
- * le retour du donateur sur le site ne prouve rien.
- */
-export interface Donation {
-  id: string;
-  reference: string;
-  amount: number;
-  paidAmount?: number;
-  name: string;
-  email?: string;
-  phone?: string;
-  anonymous: boolean;
-  message: string;
-  status: DonationStatus;
-  paymentMethod?: string;
-  paidAt?: string;
-  note: string;
-  created_at?: string;
-}

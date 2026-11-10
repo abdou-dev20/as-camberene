@@ -1,5 +1,4 @@
 import { siteApi } from '../../lib/api';
-import { compressImage } from '../../lib/compressImage';
 import {
   Article,
   Comment,
@@ -166,9 +165,6 @@ export const postComment = async (
 };
 
 export const uploadImage = async (file: File): Promise<string> => {
-  const response = await siteApi.upload<ItemResponse<{ url: string }>>(
-    '/uploads',
-    await compressImage(file)
-  );
+  const response = await siteApi.upload<ItemResponse<{ url: string }>>('/uploads', file);
   return response.data.url;
 };
