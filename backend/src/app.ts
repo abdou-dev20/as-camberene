@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import config from './config/env';
 import routes from './routes';
+import mediaRoutes from './routes/media.routes';
 import { errorHandler, routeNotFound } from './middlewares/errors';
 
 export const createApp = (): Application => {
@@ -65,7 +66,10 @@ export const createApp = (): Application => {
     res.json({ success: true, service: 'asc-camberene-api', timestamp: new Date().toISOString() });
   });
 
+  // /uploads : images écrites sur le disque, avant RustFS ou sans lui. Gardé
+  // tant que des contenus y font référence.
   app.use('/uploads', express.static(config.upload.dir, { maxAge: '30d', index: false }));
+  app.use('/media', mediaRoutes);
   app.use('/api', routes);
 
   app.use(routeNotFound);

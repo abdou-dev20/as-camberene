@@ -53,6 +53,12 @@ services:
       PAYTECH_API_KEY: ${PAYTECH_API_KEY:-}
       PAYTECH_API_SECRET: ${PAYTECH_API_SECRET:-}
       PAYTECH_ENV: ${PAYTECH_ENV:-test}
+      # Images sur RustFS. Vides, elles restent dans le volume `uploads`.
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
     volumes:
       # Les images téléversées survivent aux reconstructions d'image. Elles ne
       # sont pas dans la base : cette pile a donc bien un état à sauvegarder,

@@ -6,7 +6,9 @@ export const siteMediaUrl = (value: string | undefined | null, fallback = ''): s
 
   if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith('data:')) return trimmed;
 
-  if (trimmed.startsWith('/uploads/')) return `${SITE_ORIGIN}${trimmed}`;
+  // /uploads/ : images sur le disque de l'API ; /media/ : images sur RustFS,
+  // servies elles aussi par l'API.
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('/media/')) return `${SITE_ORIGIN}${trimmed}`;
 
   return trimmed;
 };

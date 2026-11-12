@@ -26,6 +26,38 @@ const required = (name: string): string => {
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+/**
+ * Stockage des images sur RustFS, ou tout autre service compatible S3.
+ *
+ * Facultatif : sans aucune de ces variables, les images restent sur le disque
+ * du conteneur (UPLOAD_DIR), comme avant. Une configuration à moitié remplie,
+ * elle, empêche le démarrage : mieux vaut une erreur claire qu'un envoi parti
+ * au mauvais endroit.
+ */
+const S3_VARIABLES = ['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'] as const;
+
+const s3Storage = () => {
+  const values = S3_VARIABLES.map((name) => process.env[name]?.trim() ?? '');
+  if (values.every((value) => !value)) return null;
+
+  const missing = S3_VARIABLES.filter((_, index) => !values[index]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Stockage S3 incomplet : ${missing.join(', ')} manque(nt).\n`
+      + '  Renseigner les quatre variables, ou aucune pour garder les images sur le disque.'
+    );
+  }
+
+  const [endpoint, bucket, accessKeyId, secretAccessKey] = values;
+  return {
+    endpoint,
+    bucket,
+    accessKeyId,
+    secretAccessKey,
+    region: process.env.S3_REGION?.trim() || 'us-east-1',
+  };
+};
+
 const secret = (name: string): string => {
   const value = required(name);
 
@@ -60,6 +92,7 @@ export const config = {
     dir: path.resolve(__dirname, '../..', process.env.UPLOAD_DIR ?? 'uploads'),
     maxBytes: Number(process.env.UPLOAD_MAX_BYTES ?? 150 * 1024 * 1024),
   },
+  s3: s3Storage(),
   /**
    * Passerelle PayTech, pour les dons.
    *
