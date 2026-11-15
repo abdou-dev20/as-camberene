@@ -67,6 +67,15 @@ const secret = (name: string): string => {
   return value;
 };
 
+const siteUrl = (process.env.SITE_URL ?? process.env.CORS_ORIGINS ?? 'http://localhost:5173')
+  .split(',')[0]
+  .trim()
+  .replace(/\/+$/, '');
+
+// Origine publique des images. Par défaut celle du site : Apache y transmet
+// /media et /uploads. Sur deux domaines distincts, viser l'origine de l'API.
+const mediaUrl = (process.env.MEDIA_URL?.trim() || siteUrl).replace(/\/+$/, '');
+
 export const config = {
   port: Number(process.env.PORT ?? 4100),
   isProduction,
@@ -80,10 +89,8 @@ export const config = {
     refreshTtl: process.env.JWT_REFRESH_TTL ?? '30d',
   },
 
-  siteUrl: (process.env.SITE_URL ?? process.env.CORS_ORIGINS ?? 'http://localhost:5173')
-    .split(',')[0]
-    .trim()
-    .replace(/\/+$/, ''),
+  siteUrl,
+  mediaUrl,
   corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
     .split(',')
     .map((origin) => origin.trim())

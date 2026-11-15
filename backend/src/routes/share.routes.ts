@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import Article from '../models/Article.model';
 import Match from '../models/Match.model';
-import { handler } from '../lib/http';
+import { handler, notFound } from '../lib/http';
+import { buildPreview, previewVersion } from '../lib/preview';
 import config from '../config/env';
 
 const router = Router();
@@ -14,11 +15,41 @@ const escapeHtml = (value: string): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
+const MEDIA_PREFIXES = ['/media/', '/uploads/'];
+
 const absoluteImage = (value: string | undefined): string => {
   const trimmed = value?.trim();
   if (!trimmed) return `${config.siteUrl}/assets/img/asc-camberene-equipe-2025.webp`;
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `${config.siteUrl}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+  const base = MEDIA_PREFIXES.some((prefix) => trimmed.startsWith(prefix))
+    ? config.mediaUrl
+    : config.siteUrl;
+  return `${base}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+};
+
+const previewUrl = (id: string, image: string): string =>
+  `${config.mediaUrl}/api/share/image/article/${id}?v=${previewVersion(image)}`;
+
+const articleImage = (id: string, image: string | undefined): string => {
+  const trimmed = image?.trim();
+  if (trimmed && MEDIA_PREFIXES.some((prefix) => trimmed.startsWith(prefix))) {
+    return previewUrl(id, trimmed);
+  }
+  return absoluteImage(trimmed);
+};
+
+const IMAGE_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.gif': 'image/gif',
+};
+
+const imageType = (url: string): string | undefined => {
+  const path = url.split(/[?#]/)[0];
+  return IMAGE_TYPES[path.slice(path.lastIndexOf('.')).toLowerCase()];
 };
 
 const summarize = (value: string, limit = 200): string => {
@@ -39,6 +70,9 @@ const renderPreview = (preview: Preview): string => {
   const title = escapeHtml(preview.title);
   const description = escapeHtml(preview.description);
   const image = escapeHtml(preview.image);
+  const type = preview.image.includes('/api/share/image/')
+    ? 'image/jpeg'
+    : imageType(preview.image);
 
   return `<!doctype html>
 <html lang="fr">
@@ -53,10 +87,14 @@ const renderPreview = (preview: Preview): string => {
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${image}" />
+    <meta property="og:image:alt" content="${title}" />
+    ${type ? `<meta property="og:image:type" content="${type}" />` : ''}
+    ${preview.image.startsWith('https://') ? `<meta property="og:image:secure_url" content="${image}" />` : ''}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${title}" />
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${image}" />
+    <meta name="twitter:image:alt" content="${title}" />
     <link rel="canonical" href="${escapeHtml(url)}" />
     <!--
       Un robot s'arrête aux balises ci-dessus. Une personne qui ouvrirait ce
@@ -86,6 +124,28 @@ const send = (res: import('express').Response, preview: Preview): void => {
 };
 
 router.get(
+  '/image/article/:id',
+  handler(async (req, res) => {
+    const article = await Article.findOne({ _id: req.params.id, status: 'published' }).select('image');
+    const image = typeof article?.image === 'string' ? article.image.trim() : '';
+    if (!image) throw notFound('Image introuvable');
+
+    const body = await buildPreview(image);
+    if (!body) {
+      res.redirect(302, absoluteImage(image));
+      return;
+    }
+
+    res.set({
+      'Content-Type': 'image/jpeg',
+      'Content-Length': String(body.length),
+      'Cache-Control': 'public, max-age=86400',
+    });
+    res.send(body);
+  })
+);
+
+router.get(
   '/article/:id',
   handler(async (req, res) => {
     const article = await Article.findOne({ _id: req.params.id, status: 'published' });
@@ -98,7 +158,7 @@ router.get(
     send(res, {
       title: article.title,
       description: summarize(article.excerpt || article.content || ''),
-      image: absoluteImage(article.image),
+      image: articleImage(article.id, article.image),
       path: `/news/${article.id}`,
       type: 'article',
     });

@@ -13,7 +13,13 @@ WORKDIR /app
 # NODE_ENV=production passé à la construction (Coolify le fait) la ferait
 # sauter — `tsc` serait alors introuvable.
 COPY package*.json ./
-RUN npm ci --include=dev
+# Le cache npm est monté, pas écrit dans la couche : un téléchargement coupé
+# est repris au build suivant et l'installation reste rapide.
+RUN --mount=type=cache,target=/root/.npm \
+    NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000 \
+    npm ci --include=dev
 
 COPY tsconfig*.json ./
 COPY src ./src
@@ -31,7 +37,12 @@ ENV NODE_ENV=production
 # scripts d'administration — création du super administrateur, jeu de
 # démonstration — et ils s'exécutent dans ce conteneur.
 COPY package*.json ./
-RUN npm ci --include=dev && npm cache clean --force
+# Même cache que l'étape de construction ; il ne fait pas partie de l'image.
+RUN --mount=type=cache,target=/root/.npm \
+    NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000 \
+    npm ci --include=dev
 
 COPY --from=build /app/dist ./dist
 COPY tsconfig*.json ./

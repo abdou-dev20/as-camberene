@@ -41,6 +41,7 @@ services:
       # chargent depuis leurs propres serveurs.
       SITE_URL: ${SITE_URL:-https://ascamberene.sn}
       CORS_ORIGINS: ${SITE_URL:-https://ascamberene.sn}
+      MEDIA_URL: ${MEDIA_URL:-}
       UPLOAD_DIR: uploads
       # 150 Mo : les photos brutes des appareils doivent passer telles quelles.
       UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-157286400}
@@ -75,6 +76,10 @@ services:
         VITE_API_URL: ${FCONNECT_URL:-}
         VITE_CLUB_ID: ${CLUB_ID:-}
     restart: unless-stopped
+    environment:
+      # Hôte de l'API vu par Apache. Par défaut le service Compose ; sur deux
+      # services séparés (Coolify), mettre l'URL publique de l'API.
+      API_ORIGIN: ${API_ORIGIN:-http://api:4100}
     depends_on:
       api:
         condition: service_healthy

@@ -95,6 +95,17 @@ nano .env.docker      # SITE_URL, MONGODB_URI, JWT_ACCESS_SECRET, JWT_REFRESH_SE
 > `SITE_URL` est inscrite dans le bundle au moment de la construction : la
 > changer impose de reconstruire l'image, pas seulement de redémarrer.
 
+> `API_ORIGIN` est l'adresse de l'API **vue depuis le conteneur `web`**, dont
+> l'Apache interne transmet `/api`, `/media` et `/uploads`. Laisser
+> `http://api:4100` quand le web et l'API partagent le réseau Compose ; sinon
+> mettre l'URL publique de l'API (`https://api.ascamberene.sn`). Une valeur
+> fausse fait répondre 500 « DNS lookup failure » aux pages `/news/<id>`
+> partagées et à `/api/*`.
+>
+> `MEDIA_URL` est l'origine publique des images servies par l'API. Vide, elle
+> reprend `SITE_URL` ; la fixer à `https://api.ascamberene.sn` fait pointer les
+> aperçus de partage directement vers l'API, sans passer par le proxy du site.
+
 > Pour une base en conteneur plutôt qu'Atlas — machine de test, installation
 > sans service externe — mettre `LOCAL_DB=1` dans `.env.docker` : la surcouche
 > `docker-compose.local-db.yml` ajoute alors un MongoDB et son volume, et

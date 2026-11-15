@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Users } from 'lucide-react';
 import teamHero from '../../assets/img/asc-camberene-equipe-2025.webp';
 import { useTeamMembers, useTeams } from '../hooks/useContent';
@@ -8,11 +8,13 @@ import PlayerCard from '../components/ui/PlayerCard';
 import PlayerStatsTable from '../components/ui/PlayerStatsTable';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const SECTIONS: { line: TeamMember['line']; label: string }[] = [
-  { line: 'Gardien', label: 'Gardiens' },
-  { line: 'Défenseur', label: 'Défenseurs' },
-  { line: 'Milieu', label: 'Milieux' },
-  { line: 'Attaquant', label: 'Attaquants' },
+const FILTERS: { key: string; label: string }[] = [
+  { key: 'Tous', label: 'Tous' },
+  { key: 'Gardien', label: 'Gardiens' },
+  { key: 'Défenseur', label: 'Défenseurs' },
+  { key: 'Milieu', label: 'Milieux' },
+  { key: 'Attaquant', label: 'Attaquants' },
+  { key: 'staff', label: 'Staff' },
 ];
 
 const byRank = (a: TeamMember, b: TeamMember): number =>
@@ -26,39 +28,45 @@ const cardMeta = (entry: TeamMember, team: string): string =>
 const Players: React.FC = () => {
   const { data: teams } = useTeams();
   const { data: members, loading, error, reload } = useTeamMembers();
-
-  const groups = useMemo(() => {
-    const teamRank = (slug: string): number => {
-      const index = teams.findIndex((team) => team.slug === slug);
-      return index === -1 ? teams.length : index;
-    };
-    const sortByTeam = (a: TeamMember, b: TeamMember): number =>
-      teamRank(a.team) - teamRank(b.team) || byRank(a, b);
-
-    const visible = members.filter((member) => member.isVisible !== false);
-    const players = visible.filter((member) => member.kind === 'player');
-    const staff = visible.filter((member) => member.kind === 'staff').sort(sortByTeam);
-
-    return [
-      ...SECTIONS.map((section) => ({
-        key: section.line as string,
-        label: section.label,
-        entries: players.filter((player) => player.line === section.line).sort(sortByTeam),
-      })),
-      { key: 'staff', label: 'Staff', entries: staff },
-    ].filter((group) => group.entries.length > 0);
-  }, [members, teams]);
+  const [active, setActive] = useState<string>('Tous');
 
   const teamName = (slug: string): string =>
     teams.find((team) => team.slug === slug)?.name ?? PLAYER_TEAM_LABELS[slug] ?? slug;
 
+  const ordered = useMemo(() => {
+    const teamRank = (slug: string): number => {
+      const index = teams.findIndex((team) => team.slug === slug);
+      return index === -1 ? teams.length : index;
+    };
+
+    return members
+      .filter((member) => member.isVisible !== false)
+      .sort((a, b) => teamRank(a.team) - teamRank(b.team) || byRank(a, b));
+  }, [members, teams]);
+
+  const counts = useMemo(() => {
+    const result: Record<string, number> = {
+      Tous: ordered.length,
+      staff: ordered.filter((member) => member.kind === 'staff').length,
+    };
+    FILTERS.forEach((filter) => {
+      if (filter.key === 'Tous' || filter.key === 'staff') return;
+      result[filter.key] = ordered.filter(
+        (member) => member.kind === 'player' && member.line === filter.key
+      ).length;
+    });
+    return result;
+  }, [ordered]);
+
+  const filtered = useMemo(() => {
+    if (active === 'Tous') return ordered;
+    if (active === 'staff') return ordered.filter((member) => member.kind === 'staff');
+    return ordered.filter((member) => member.kind === 'player' && member.line === active);
+  }, [ordered, active]);
+
   const allPlayers = useMemo(
-    () => members.filter((member) => member.isVisible !== false && member.kind === 'player'),
-    [members]
-  );
-  const totalMembers = useMemo(
-    () => members.filter((member) => member.isVisible !== false).length,
-    [members]
+    () => ordered.filter((member) => member.kind === 'player'),
+    [ordered]
   );
 
   return (
@@ -71,7 +79,7 @@ const Players: React.FC = () => {
       >
         <span className="chip inline-flex items-center gap-2 bg-club-yellow text-black">
           <Users size={14} />
-          {totalMembers > 0 ? `${totalMembers} membres` : 'Effectif'}
+          {ordered.length > 0 ? `${ordered.length} membres` : 'Effectif'}
         </span>
       </PageHero>
 
@@ -90,25 +98,48 @@ const Players: React.FC = () => {
             </button>
           </div>
         </section>
-      ) : groups.length === 0 ? (
+      ) : ordered.length === 0 ? (
         <section className="band-green py-12">
           <div className="site-container">
             <p className="panel p-12 text-center text-white/60">Effectif en cours de mise à jour.</p>
           </div>
         </section>
       ) : (
-        <section className="band-green py-12">
-          <div className="site-container space-y-14">
-            {groups.map((group) => (
-              <div key={group.key}>
-                <div className="mb-6 flex items-center gap-3 border-b border-white/10 pb-3">
-                  <h2 className="text-2xl font-extrabold uppercase tracking-wide text-white">
-                    {group.label}
-                  </h2>
-                  <span className="chip bg-club-yellow text-black">{group.entries.length}</span>
-                </div>
+        <>
+          <section className="border-b border-white/10 bg-charcoal">
+            <div className="site-container flex flex-wrap gap-2 py-5">
+              {FILTERS.map((filter) => (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={() => setActive(filter.key)}
+                  aria-pressed={active === filter.key}
+                  className={`rounded-full px-5 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${
+                    active === filter.key
+                      ? 'bg-club-yellow text-black'
+                      : 'bg-white/[0.06] text-white/70 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {filter.label} ({counts[filter.key] ?? 0})
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="band-green py-12">
+            <div className="site-container">
+              <div className="mb-8 flex items-center gap-3">
+                <h2 className="section-title">Effectif</h2>
+                <span className="chip bg-club-yellow text-black">{filtered.length}</span>
+              </div>
+
+              {filtered.length === 0 ? (
+                <p className="panel p-12 text-center text-white/60">
+                  Aucun membre dans cette catégorie.
+                </p>
+              ) : (
                 <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {group.entries.map((entry) => (
+                  {filtered.map((entry) => (
                     <PlayerCard
                       key={entry.id}
                       photo={entry.photo}
@@ -123,10 +154,10 @@ const Players: React.FC = () => {
                     />
                   ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              )}
+            </div>
+          </section>
+        </>
       )}
 
       {allPlayers.length > 0 && (
