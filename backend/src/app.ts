@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import config from './config/env';
 import routes from './routes';
+import mediaRoutes from './routes/media.routes';
 import { errorHandler, routeNotFound } from './middlewares/errors';
 
 export const createApp = (): Application => {
@@ -35,13 +36,29 @@ export const createApp = (): Application => {
   app.use(express.urlencoded({ extended: true }));
   app.use(morgan(config.isProduction ? 'combined' : 'dev'));
 
+  // Une page publique coûte une dizaine de lectures, et au Sénégal beaucoup de
+  // visiteurs mobiles partagent la même adresse IP (CGNAT) : les lectures ont
+  // donc un plafond large, les écritures gardent le plafond serré.
+  const tooMany = { success: false, message: 'Trop de requêtes, réessayez plus tard.' };
+  const isRead = (req: express.Request) => req.method === 'GET' || req.method === 'HEAD';
+  app.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 3000,
+      skip: (req) => !isRead(req),
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: tooMany,
+    })
+  );
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000,
       limit: 300,
+      skip: isRead,
       standardHeaders: true,
       legacyHeaders: false,
-      message: { success: false, message: 'Trop de requêtes, réessayez plus tard.' },
+      message: tooMany,
     })
   );
 
@@ -49,7 +66,10 @@ export const createApp = (): Application => {
     res.json({ success: true, service: 'asc-camberene-api', timestamp: new Date().toISOString() });
   });
 
+  // /uploads : images écrites sur le disque, avant RustFS ou sans lui. Gardé
+  // tant que des contenus y font référence.
   app.use('/uploads', express.static(config.upload.dir, { maxAge: '30d', index: false }));
+  app.use('/media', mediaRoutes);
   app.use('/api', routes);
 
   app.use(routeNotFound);

@@ -1,7 +1,7 @@
 import { connectDatabase, disconnectDatabase } from '../src/config/database';
 import SiteUser from '../src/models/SiteUser.model';
 import { ASSIGNABLE_ROLES, ROLE_LABELS, UserRole } from '../src/lib/roles';
-import { MIN_PASSWORD_LENGTH, generatePassword } from './lib/accounts';
+import { MIN_PASSWORD_LENGTH, generatePassword } from '../src/lib/accounts';
 
 function readOption(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);

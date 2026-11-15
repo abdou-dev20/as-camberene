@@ -5,26 +5,31 @@
 # résultat — des fichiers statiques — part dans l'image finale. L'hôte n'a donc
 # besoin ni de Node ni de npm.
 #
-# Le contexte de construction est la racine du dépôt (voir docker-compose.yml) :
-# c'est ce qui permet de copier aussi deploy/httpd-site.conf.
+# Le contexte de construction est le dossier frontend/ lui-même (voir
+# docker-compose.yml) ; sur Coolify : Base Directory = /frontend.
 
 FROM node:20-alpine AS build
 WORKDIR /app
 
-COPY frontend/package*.json ./
+COPY package*.json ./
 RUN npm ci
 
 # L'adresse de l'API est figée à la construction : Vite l'inscrit dans le
 # bundle, elle ne peut pas être changée au démarrage du conteneur.
-ARG VITE_SITE_API_URL=https://ascamberene.sn
-ARG VITE_API_URL=
-ARG VITE_CLUB_ID=
-ENV VITE_SITE_API_URL=$VITE_SITE_API_URL \
-    VITE_API_URL=$VITE_API_URL \
-    VITE_CLUB_ID=$VITE_CLUB_ID
+#
+# Sans argument, c'est .env.production qui décide. Un argument passé vide
+# l'écraserait quand même — Vite fait passer l'environnement avant les fichiers
+# .env — et le site appellerait alors http://localhost:4100 : les variables
+# vides sont donc retirées avant la construction.
+ARG VITE_SITE_API_URL
+ARG VITE_API_URL
+ARG VITE_CLUB_ID
 
-COPY frontend/ ./
-RUN npm run build
+COPY . ./
+RUN for v in VITE_SITE_API_URL VITE_API_URL VITE_CLUB_ID; do \
+      [ -n "$(printenv "$v")" ] || unset "$v"; \
+    done \
+ && npm run build
 
 # --------------------------------------------------------------------------
 FROM httpd:2.4-alpine AS runtime
@@ -39,7 +44,7 @@ RUN sed -i \
     conf/httpd.conf \
  && echo 'Include conf/extra/asc-site.conf' >> conf/httpd.conf
 
-COPY deploy/httpd-site.conf conf/extra/asc-site.conf
+COPY httpd-site.conf conf/extra/asc-site.conf
 COPY --from=build /app/dist ./htdocs
 
 # Les fichiers de `public/` sont copiés tels quels par Vite, avec les droits

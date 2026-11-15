@@ -30,3 +30,6 @@ dist-ssr
 
 # Sauvegardes produites par deploy/docker.sh
 backups/
+
+# Archive du site à envoyer chez LWS (cd frontend && npm run build)
+frontend/site-lws.zip

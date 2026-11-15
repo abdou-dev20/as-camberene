@@ -1,15 +1,19 @@
 import config from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import createApp from './app';
+import { seedDefaultAdmin } from './lib/defaultAdmin';
 
 const start = async (): Promise<void> => {
   await connectDatabase();
   console.log('MongoDB connecté');
+  await seedDefaultAdmin();
 
   const server = createApp().listen(config.port, () => {
     console.log(`API du site ASC Cambérène sur http://localhost:${config.port}`);
     console.log(`Origines autorisées : ${config.corsOrigins.join(', ')}`);
   });
+  // Une photo de 100 Mo sur une connexion lente dépasse les 5 min par défaut.
+  server.requestTimeout = 15 * 60 * 1000;
 
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`\n${signal} reçu, arrêt en cours…`);

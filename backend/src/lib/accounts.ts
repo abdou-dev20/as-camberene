@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
-import SiteUser from '../../src/models/SiteUser.model';
-import { ROLE_LABELS, UserRole } from '../../src/lib/roles';
+import SiteUser from '../models/SiteUser.model';
+import { ROLE_LABELS, UserRole } from './roles';
 
 export const MIN_PASSWORD_LENGTH = 10;
 
