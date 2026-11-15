@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Mail, MapPin, Phone, Users } from 'lucide-react';
+import { ArrowLeft, MapPin, Users } from 'lucide-react';
 import teamHero from '../../assets/img/asc-camberene-equipe-2025.webp';
 import { useTeamMembers, useTeams } from '../hooks/useContent';
 import { TeamMember } from '../types';
@@ -29,6 +29,8 @@ const SECTION_OF_LINE: Record<string, string> = {
   Milieu: 'Milieux',
   Attaquant: 'Attaquants',
 };
+
+const LINE_TABS = ['Gardiens', 'Défenseurs', 'Milieux', 'Attaquants'] as const;
 
 const toEntry = (member: TeamMember): PlayerEntry => ({
   name: member.name,
@@ -75,9 +77,10 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
   const sections = useMemo(() => sectionsOfMembers(members), [members]);
 
   const headcount = members.length;
-  const [activeSection, setActiveSection] = useState<string>('Attaquants');
 
   const players = useMemo(() => members.filter((member) => member.kind === 'player'), [members]);
+
+  const [activeLine, setActiveLine] = useState<string>('Tous');
 
   if (!team) {
     return (
@@ -97,10 +100,16 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
   }
 
   const played = team.stats.wins + team.stats.draws + team.stats.losses;
-  const sectionNames = Object.keys(sections);
-  const activeEntries: PlayerEntry[] = sections[activeSection as keyof typeof sections] ?? [];
-  const isStaff = activeSection === 'Staff';
-  const rosterIsEmpty = sectionNames.every((name) => sections[name as keyof typeof sections].length === 0);
+  const sectionNames = Object.keys(sections).filter((name) => sections[name].length > 0);
+  const rosterIsEmpty = sectionNames.length === 0;
+
+  const lineTabs = ['Tous', ...LINE_TABS, ...(sections.Staff.length > 0 ? ['Staff'] : [])];
+
+  const detailGroups = (
+    activeLine === 'Tous'
+      ? lineTabs.slice(1).map((name) => ({ name, entries: sections[name] ?? [] }))
+      : [{ name: activeLine, entries: sections[activeLine] ?? [] }]
+  ).filter((group) => group.entries.length > 0);
 
   return (
     <div className="bg-graphite">
@@ -150,58 +159,77 @@ const TeamRosterView: React.FC<TeamRosterViewProps> = ({ teamId }) => {
 
       <section className="band-green py-12">
         <div className="site-container">
-          <div className="mb-8 flex flex-wrap gap-2">
-            {sectionNames.map((name) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => setActiveSection(name)}
-                aria-pressed={activeSection === name}
-                className={`rounded-full px-5 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${
-                  activeSection === name
-                    ? 'bg-club-yellow text-black'
-                    : 'bg-black/25 text-white/70 hover:bg-black/40 hover:text-white'
-                }`}
-              >
-                {name} ({sections[name as keyof typeof sections].length})
-              </button>
-            ))}
-          </div>
-
           {rosterIsEmpty ? (
             <p className="panel p-12 text-center text-white/60">Effectif en cours de mise à jour.</p>
-          ) : activeEntries.length > 0 ? (
-            <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {activeEntries.map((entry) => (
-                <div key={`${entry.name}-${entry.number ?? entry.role ?? ''}`}>
-                  <PlayerCard
-                    photo={entry.photo}
-                    name={entry.name}
-                    position={isStaff ? entry.role : activeSection}
-                    number={entry.number}
-                    meta={
-                      isStaff
-                        ? entry.experience && `${entry.experience} d'expérience`
-                        : [entry.nationality, entry.age ? `${entry.age} ans` : null].filter(Boolean).join(' · ')
-                    }
-                  />
-                  {isStaff && entry.contact && (
-                    <div className="mt-2 space-y-1 px-1 text-xs text-white/60">
-                      <p className="flex items-center gap-2 truncate">
-                        <Mail size={12} className="shrink-0 text-club-yellow" />
-                        {entry.contact.email}
-                      </p>
-                      <p className="flex items-center gap-2">
-                        <Phone size={12} className="shrink-0 text-club-yellow" />
-                        {entry.contact.phone}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
           ) : (
-            <p className="panel p-12 text-center text-white/60">Aucun élément dans cette ligne.</p>
+            <>
+              <h2 className="section-title mb-8">Effectif</h2>
+
+              <div className="flex flex-wrap gap-2">
+                {lineTabs.map((name) => {
+                  const count =
+                    name === 'Tous'
+                      ? lineTabs
+                          .slice(1)
+                          .reduce((total, line) => total + (sections[line]?.length ?? 0), 0)
+                      : sections[name]?.length ?? 0;
+
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => setActiveLine(name)}
+                      aria-pressed={activeLine === name}
+                      className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition-colors ${
+                        activeLine === name
+                          ? 'bg-club-yellow text-black'
+                          : 'bg-black/30 text-white/70 hover:bg-black/50 hover:text-white'
+                      }`}
+                    >
+                      {name} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-8 space-y-10">
+                {detailGroups.length > 0 ? (
+                  detailGroups.map((group) => {
+                    const isStaff = group.name === 'Staff';
+
+                    return (
+                      <div key={group.name}>
+                        <div className="mb-4 flex items-center gap-3">
+                          <h3 className="text-lg font-extrabold uppercase tracking-wide text-white">
+                            {group.name}
+                          </h3>
+                          <span className="chip bg-club-yellow text-black">{group.entries.length}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                          {group.entries.map((entry) => (
+                            <div key={`${group.name}-${entry.name}-${entry.number ?? entry.role ?? ''}`}>
+                              <PlayerCard
+                                photo={entry.photo}
+                                name={entry.name}
+                                position={isStaff ? entry.role || 'Staff' : group.name}
+                                number={entry.number}
+                                meta={[entry.nationality, entry.age ? `${entry.age} ans` : null]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="panel p-12 text-center text-white/60">
+                    Aucun élément dans cette ligne.
+                  </p>
+                )}
+              </div>
+            </>
           )}
         </div>
       </section>

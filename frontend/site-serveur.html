@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Le SVG est déclaré en premier : les navigateurs qui le gèrent le
+      choisissent et le rendent net à toutes les tailles. Le PNG reste le repli
+      pour les autres, et pour l'icône d'écran d'accueil iOS.
+    -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/assets/img/asc-camberene-logo-officiel.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0D7C27" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="ASC Camberene - Club officiel de football sénégalais. Fondé en 1965, champion de Ligue 2, promu en Ligue 1." />
+    <meta name="keywords" content="ASC Camberene, football, Sénégal, Ligue 1, club officiel, jaune et vert" />
+    <title>ASC Camberene - Club Officiel Sénél</title>
+
+    <!--
+      Aperçu des liens partagés sur les réseaux.
+
+      Ces valeurs sont celles du site entier. Les robots de Facebook, WhatsApp
+      ou X ne lancent pas le JavaScript : une balise posée par React arriverait
+      trop tard pour eux, et c'est pourquoi elles sont écrites ici, en dur, dans
+      le seul HTML qu'ils reçoivent.
+
+      Pour qu'un article ou un match partagé montre SA propre image plutôt que
+      celle du club, le serveur rend une page dédiée à ces robots — voir
+      `backend/src/routes/share.routes.ts` et la règle de réécriture dans
+      `deploy/httpd-site.conf`.
+
+      L'image doit être une adresse absolue : les réseaux la chargent depuis
+      leurs propres serveurs, où un chemin relatif ne veut rien dire.
+    -->
+    <meta property="og:site_name" content="ASC Cambérène" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_SN" />
+    <meta property="og:url" content="https://ascamberene.sn/" />
+    <meta property="og:title" content="ASC Cambérène — Club officiel" />
+    <meta property="og:description" content="Club officiel de football sénégalais, fondé en 1965. Actualités, effectif, calendrier et boutique." />
+    <meta property="og:image" content="https://ascamberene.sn/assets/img/asc-camberene-equipe-2025.webp" />
+    <meta property="og:image:alt" content="L'effectif de l'ASC Cambérène" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ASC Cambérène — Club officiel" />
+    <meta name="twitter:description" content="Club officiel de football sénégalais, fondé en 1965." />
+    <meta name="twitter:image" content="https://ascamberene.sn/assets/img/asc-camberene-equipe-2025.webp" />
+    <script type="module" crossorigin src="/assets/index-Dg2ez2j6.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CBZYJVNu.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

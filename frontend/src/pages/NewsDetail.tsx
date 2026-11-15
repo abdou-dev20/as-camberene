@@ -13,6 +13,37 @@ import Rail from '../components/ui/Rail';
 import SectionHeader from '../components/ui/SectionHeader';
 import ShareButtons from '../components/ui/ShareButtons';
 
+interface MetaTag {
+  attribute: 'name' | 'property';
+  key: string;
+  content: string;
+}
+
+const applyMeta = (tags: MetaTag[]): (() => void) => {
+  const previous = tags.map(({ attribute, key }) => {
+    const element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
+    return { element, content: element?.getAttribute('content') ?? null };
+  });
+
+  for (const { attribute, key, content } of tags) {
+    let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
+    if (!element) {
+      element = document.createElement('meta');
+      element.setAttribute(attribute, key);
+      document.head.appendChild(element);
+    }
+    element.setAttribute('content', content);
+  }
+
+  return () => {
+    for (const { element, content } of previous) {
+      if (!element) continue;
+      if (content === null) element.remove();
+      else element.setAttribute('content', content);
+    }
+  };
+};
+
 const NewsDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -34,6 +65,40 @@ const NewsDetail: React.FC = () => {
 
   useEffect(() => {
     setComments(article?.comments ?? []);
+  }, [article]);
+
+  useEffect(() => {
+    if (!article) return;
+
+    const previousTitle = document.title;
+    const url = `${window.location.origin}/news/${article.id}`;
+    const description = article.excerpt || article.content.slice(0, 200);
+    const image = article.image;
+
+    document.title = `${article.title} — ASC Cambérène`;
+
+    const tags: MetaTag[] = [
+      { attribute: 'property', key: 'og:type', content: 'article' },
+      { attribute: 'property', key: 'og:url', content: url },
+      { attribute: 'property', key: 'og:title', content: article.title },
+      { attribute: 'property', key: 'og:description', content: description },
+      { attribute: 'name', key: 'twitter:card', content: 'summary_large_image' },
+      { attribute: 'name', key: 'twitter:title', content: article.title },
+      { attribute: 'name', key: 'twitter:description', content: description },
+    ];
+
+    if (image) {
+      tags.push(
+        { attribute: 'property', key: 'og:image', content: image },
+        { attribute: 'name', key: 'twitter:image', content: image }
+      );
+    }
+
+    const restore = applyMeta(tags);
+    return () => {
+      document.title = previousTitle;
+      restore();
+    };
   }, [article]);
 
   if (loading && !article) {
