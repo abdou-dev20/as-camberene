@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { BarChart3, Users, ShoppingBag, Newspaper, Settings, Menu, Shield, LogOut, User as UserIcon, UserCog, Crown, Landmark, Package, Clapperboard, CalendarDays, Images, Ticket, Trophy, Award, LayoutTemplate, ChevronLeft } from 'lucide-react';
+import { BarChart3, Users, ShoppingBag, Newspaper, Settings, Menu, Shield, LogOut, User as UserIcon, UserCog, Crown, Landmark, Package, Clapperboard, CalendarDays, Images, Ticket, Trophy, Award, LayoutTemplate, ChevronLeft, Activity, ScrollText } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Permission, ROLE_LABELS } from '../../lib/roles';
 
@@ -21,6 +21,8 @@ const navItems: { to: string; label: string; icon: React.ReactNode; permission?:
   { to: '/admin/galerie', label: 'Galerie', icon: <Images size={18} />, permission: 'gallery:write' },
   { to: '/admin/billetterie', label: 'Billetterie', icon: <Ticket size={18} />, permission: 'orders:manage' },
   { to: '/admin/utilisateurs', label: 'Comptes', icon: <UserCog size={18} />, permission: 'users:manage' },
+  { to: '/admin/monitoring', label: 'Monitoring', icon: <Activity size={18} />, permission: 'monitoring:read' },
+  { to: '/admin/journal', label: 'Journal système', icon: <ScrollText size={18} />, permission: 'logs:read' },
   { to: '/admin/parametres', label: 'Paramètres', icon: <Settings size={18} /> },
 ];
 

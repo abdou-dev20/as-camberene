@@ -4,7 +4,9 @@ import SiteUser from '../models/SiteUser.model';
 import { issueTokens, verify } from '../lib/tokens';
 import { permissionsOf } from '../lib/roles';
 import { handler, unauthorized } from '../lib/http';
-import { authenticate } from '../middlewares/auth';
+import { authenticate, optionalAuth } from '../middlewares/auth';
+import { recordActivity, requestAuditContext } from '../lib/audit';
+import { continueSession, endSession, startSession } from '../lib/sessions';
 import { loginSchema, refreshSchema, registerSchema } from '../validators/auth';
 
 const router = Router();
@@ -41,12 +43,29 @@ router.post(
       role: 'subscriber',
     });
 
+    const context = requestAuditContext(req);
+    const sessionId = await startSession(
+      { id: user.id, name: user.name, email: user.email, role: user.role },
+      { ip: context.ip, userAgent: context.userAgent }
+    );
+
+    await recordActivity({
+      actor: { id: user.id, name: user.name, email: user.email, role: user.role },
+      action: 'auth.register',
+      category: 'auth',
+      description: 'Création de compte',
+      ...context,
+      status: 201,
+      targetType: 'auth',
+      targetId: user.id,
+    });
+
     res.status(201).json({
       success: true,
       data: {
         user,
         permissions: permissionsOf(user.role),
-        tokens: issueTokens({ userId: user.id, role: user.role }),
+        tokens: issueTokens({ userId: user.id, role: user.role, sessionId }),
       },
     });
   })
@@ -57,26 +76,64 @@ router.post(
   loginLimiter,
   handler(async (req, res) => {
     const value = await loginSchema.validateAsync(req.body, { stripUnknown: true });
+    const email = value.email.toLowerCase().trim();
+    const context = requestAuditContext(req);
 
-    const user = await SiteUser.findOne({ email: value.email.toLowerCase() }).select(
-      '+password_hash'
-    );
+    const user = await SiteUser.findOne({ email }).select('+password_hash');
 
     if (!user || !(await user.validatePassword(value.password))) {
+      await recordActivity({
+        actor: user
+          ? { id: user.id, name: user.name, email: user.email, role: user.role }
+          : { email },
+        action: 'auth.login_failed',
+        category: 'auth',
+        description: 'Tentative de connexion échouée',
+        ...context,
+        status: 401,
+        targetType: 'auth',
+        metadata: { email },
+      });
       throw unauthorized('Email ou mot de passe incorrect');
     }
 
-    if (!user.is_active) throw unauthorized('Ce compte est désactivé');
+    if (!user.is_active) {
+      await recordActivity({
+        actor: { id: user.id, name: user.name, email: user.email, role: user.role },
+        action: 'auth.login_blocked',
+        category: 'auth',
+        description: 'Connexion refusée : compte désactivé',
+        ...context,
+        status: 403,
+        targetType: 'auth',
+      });
+      throw unauthorized('Ce compte est désactivé');
+    }
 
     user.last_login_at = new Date();
     await user.save();
+
+    const sessionId = await startSession(
+      { id: user.id, name: user.name, email: user.email, role: user.role },
+      { ip: context.ip, userAgent: context.userAgent }
+    );
+
+    await recordActivity({
+      actor: { id: user.id, name: user.name, email: user.email, role: user.role },
+      action: 'auth.login',
+      category: 'auth',
+      description: 'Connexion réussie',
+      ...context,
+      status: 200,
+      targetType: 'auth',
+    });
 
     res.json({
       success: true,
       data: {
         user,
         permissions: permissionsOf(user.role),
-        tokens: issueTokens({ userId: user.id, role: user.role }),
+        tokens: issueTokens({ userId: user.id, role: user.role, sessionId }),
       },
     });
   })
@@ -91,12 +148,19 @@ router.post(
     const user = await SiteUser.findById(payload.userId);
     if (!user || !user.is_active) throw unauthorized('Session invalide');
 
+    const context = requestAuditContext(req);
+    const sessionId = await continueSession(
+      payload.sessionId,
+      { id: user.id, name: user.name, email: user.email, role: user.role },
+      { ip: context.ip, userAgent: context.userAgent }
+    );
+
     res.json({
       success: true,
       data: {
         user,
         permissions: permissionsOf(user.role),
-        tokens: issueTokens({ userId: user.id, role: user.role }),
+        tokens: issueTokens({ userId: user.id, role: user.role, sessionId }),
       },
     });
   })
@@ -113,8 +177,29 @@ router.get(
   })
 );
 
-router.post('/logout', (_req, res) => {
-  res.json({ success: true, message: 'Déconnecté' });
-});
+router.post(
+  '/logout',
+  optionalAuth,
+  handler(async (req, res) => {
+    if (req.auth) {
+      const user = await SiteUser.findById(req.auth.userId).select('name email role');
+      await endSession(req.auth.sessionId);
+
+      if (user) {
+        await recordActivity({
+          actor: { id: user.id, name: user.name, email: user.email, role: user.role },
+          action: 'auth.logout',
+          category: 'auth',
+          description: 'Déconnexion',
+          ...requestAuditContext(req),
+          status: 200,
+          targetType: 'auth',
+        });
+      }
+    }
+
+    res.json({ success: true, message: 'Déconnecté' });
+  })
+);
 
 export default router;

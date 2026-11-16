@@ -15,6 +15,8 @@ export const PERMISSIONS = [
   'settings:write',
   'comments:moderate',
   'media:upload',
+  'logs:read',
+  'monitoring:read',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -37,6 +39,8 @@ const MATRIX: Record<UserRole, Permission[]> = {
     'hero:write',
     'matches:write',
     'settings:write',
+    'logs:read',
+    'monitoring:read',
   ],
   journalist: [...EDITORIAL],
   'shop-admin': ['products:write', 'orders:manage', 'media:upload'],

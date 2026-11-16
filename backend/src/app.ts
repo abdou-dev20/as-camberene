@@ -6,6 +6,8 @@ import rateLimit from 'express-rate-limit';
 import config from './config/env';
 import routes from './routes';
 import mediaRoutes from './routes/media.routes';
+import { auditTrail } from './middlewares/audit';
+import { touchVisitor } from './middlewares/visitor';
 import { errorHandler, routeNotFound } from './middlewares/errors';
 
 export const createApp = (): Application => {
@@ -70,7 +72,7 @@ export const createApp = (): Application => {
   // tant que des contenus y font référence.
   app.use('/uploads', express.static(config.upload.dir, { maxAge: '30d', index: false }));
   app.use('/media', mediaRoutes);
-  app.use('/api', routes);
+  app.use('/api', touchVisitor, auditTrail, routes);
 
   app.use(routeNotFound);
   app.use(errorHandler);

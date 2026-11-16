@@ -3,12 +3,15 @@ import SiteUser from '../models/SiteUser.model';
 import { TokenPayload, verify } from '../lib/tokens';
 import { Permission, ROLE_LABELS, isStaffRole, roleCan } from '../lib/roles';
 import { forbidden, unauthorized } from '../lib/http';
+import { AuditActor } from '../lib/audit';
+import { touchSession } from '../lib/sessions';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       auth?: TokenPayload;
+      actor?: AuditActor;
     }
   }
 }
@@ -31,7 +34,10 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction): 
   if (!token) return next();
 
   const payload = verifyOptional(token);
-  if (payload) req.auth = payload;
+  if (payload) {
+    req.auth = payload;
+    touchSession(payload.sessionId);
+  }
   next();
 };
 
@@ -47,10 +53,13 @@ export const authenticate = (req: Request, _res: Response, next: NextFunction): 
   }
 
   SiteUser.findById(payload.userId)
-    .select('role is_active')
+    .select('name email role is_active')
     .then((account) => {
       if (!account || !account.is_active) return next(unauthorized('Session invalide'));
-      req.auth = { userId: payload.userId, role: account.role };
+
+      req.auth = { userId: payload.userId, role: account.role, sessionId: payload.sessionId };
+      req.actor = { id: account.id, name: account.name, email: account.email, role: account.role };
+      touchSession(payload.sessionId);
       next();
     })
     .catch(next);

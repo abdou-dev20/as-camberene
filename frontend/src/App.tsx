@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import { trackPageView } from './lib/visitor';
 import { AuthProvider } from './hooks/AuthProvider';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -48,6 +49,8 @@ import EquipesAdmin from './pages/admin/EquipesAdmin';
 import BilletterieAdmin from './pages/admin/BilletterieAdmin';
 import Commandes from './pages/admin/Commandes';
 import Utilisateurs from './pages/admin/Utilisateurs';
+import Journal from './pages/admin/Journal';
+import Monitoring from './pages/admin/Monitoring';
 import StatistiquesAdmin from './pages/admin/StatistiquesAdmin';
 import ContenuSiteAdmin from './pages/admin/ContenuSiteAdmin';
 import JoueurDuMoisAdmin from './pages/admin/JoueurDuMoisAdmin';
@@ -58,6 +61,12 @@ const InnerApp: React.FC = () => {
   const { loading } = useAuth();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin')) return;
+    trackPageView(`${location.pathname}${location.search}`);
+  }, [location.pathname, location.search]);
+
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-graphite"><LoadingSpinner /></div>;
   }
@@ -112,6 +121,8 @@ const InnerApp: React.FC = () => {
             <Route path="/admin/galerie" element={<ProtectedRoute permission="gallery:write"><AdminLayout><GalerieAdmin /></AdminLayout></ProtectedRoute>} />
             <Route path="/admin/billetterie" element={<ProtectedRoute permission="orders:manage"><AdminLayout><BilletterieAdmin /></AdminLayout></ProtectedRoute>} />
             <Route path="/admin/utilisateurs" element={<ProtectedRoute permission="users:manage"><AdminLayout><Utilisateurs /></AdminLayout></ProtectedRoute>} />
+            <Route path="/admin/monitoring" element={<ProtectedRoute permission="monitoring:read"><AdminLayout><Monitoring /></AdminLayout></ProtectedRoute>} />
+            <Route path="/admin/journal" element={<ProtectedRoute permission="logs:read"><AdminLayout><Journal /></AdminLayout></ProtectedRoute>} />
             <Route path="/admin/parametres" element={<ProtectedRoute><AdminLayout><Parametres /></AdminLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -8,6 +8,7 @@ export type { UserRole };
 export interface TokenPayload {
   userId: string;
   role: UserRole;
+  sessionId?: string;
 }
 
 interface SignedPayload extends TokenPayload {
@@ -45,7 +46,7 @@ export const verify = (token: string, type: SignedPayload['type']): TokenPayload
 
     if (decoded.type !== type) throw unauthorized('Jeton de type inattendu');
 
-    return { userId: decoded.userId, role: decoded.role };
+    return { userId: decoded.userId, role: decoded.role, sessionId: decoded.sessionId };
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) throw unauthorized('Session expirée');
     throw unauthorized('Jeton invalide');

@@ -31,6 +31,8 @@ import {
   productSchema,
 } from '../validators/content';
 import authRoutes from './auth.routes';
+import adminRoutes from './admin.routes';
+import trackRoutes from './track.routes';
 import userRoutes from './users.routes';
 import orderRoutes from './orders.routes';
 import commentRoutes from './comments.routes';
@@ -45,6 +47,10 @@ import albumRoutes from './albums.routes';
 const router = Router();
 
 router.use('/auth', authRoutes);
+
+router.use('/admin', adminRoutes);
+
+router.use('/track', trackRoutes);
 
 router.use('/users', userRoutes);
 

@@ -1,5 +1,6 @@
 import { FCONNECT_API_URL, REQUEST_TIMEOUT_MS, SITE_API_URL } from '../config/env';
 import { AuthTokens, TokenStore, fconnectTokens, siteTokens } from './tokens';
+import { getVisitorId } from './visitor';
 
 export type QueryValue = string | number | boolean | undefined | null;
 
@@ -123,7 +124,9 @@ const createApiClient = ({ baseUrl, tokens, refreshPath }: ClientOptions): ApiCl
     options: RequestOptions,
     token: string | null
   ): Promise<Response> => {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'X-Visitor-Id': getVisitorId(),
+    };
 
     if (options.body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${token}`;
