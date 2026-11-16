@@ -117,8 +117,8 @@ export const config = {
     env: process.env.PAYTECH_ENV?.trim() === 'prod' ? ('prod' as const) : ('test' as const),
   },
   /**
-   * Compte d'administration créé au démarrage s'il n'existe pas encore (voir
-   * lib/defaultAdmin.ts). Facultatif : sans ces variables, rien n'est créé.
+   * Compte d'administration créé ou synchronisé au démarrage (voir
+   * lib/defaultAdmin.ts). Facultatif : sans ces variables, rien n'est modifié.
    */
   defaultAdmin: {
     email: process.env.DEFAULT_ADMIN_EMAIL?.trim() ?? '',
