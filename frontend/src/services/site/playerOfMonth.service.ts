@@ -39,13 +39,16 @@ export interface PotmAdmin {
 
 const withPhoto = <T extends PotmNominee>(nominee: T): T => ({ ...nominee, photo: siteMediaUrl(nominee.photo) });
 
-export const getCurrentPotm = async (signal?: AbortSignal): Promise<PotmCurrent | null> => {
-  const response = await siteApi.get<{ data: PotmCurrent | null }>('/player-of-month/current', { auth: true, signal });
+export const getCurrentPotm = async (signal?: AbortSignal, options: { auth?: boolean } = {}): Promise<PotmCurrent | null> => {
+  const response = await siteApi.get<{ data: PotmCurrent | null }>('/player-of-month/current', {
+    auth: options.auth ?? false,
+    signal,
+  });
   return response.data ? { ...response.data, nominees: response.data.nominees.map(withPhoto) } : null;
 };
 
-export const votePotm = async (pollId: string, player: string): Promise<void> => {
-  await siteApi.post(`/player-of-month/${pollId}/vote`, { player }, { auth: true });
+export const votePotm = async (pollId: string, player: string, options: { auth?: boolean } = {}): Promise<void> => {
+  await siteApi.post(`/player-of-month/${pollId}/vote`, { player }, { auth: options.auth ?? false });
 };
 
 export const listPotm = async (signal?: AbortSignal): Promise<PotmAdmin[]> => {

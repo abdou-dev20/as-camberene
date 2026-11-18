@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { Check, Crown, Loader2, Vote } from 'lucide-react';
 import useApiResource from '../hooks/useApiResource';
-import { useAuth } from '../hooks/useAuth';
 import { ApiError } from '../lib/api';
 import { IMAGE_PLACEHOLDER, handleImageError } from '../lib/imagePlaceholder';
 import { getCurrentPotm, monthName, PotmCurrent, votePotm } from '../services/site/playerOfMonth.service';
 
 const PlayerOfMonthVote: React.FC = () => {
-  const { user } = useAuth();
-  const location = useLocation();
   const { data: poll, loading, reload } = useApiResource<PotmCurrent | null>(
     (signal) => getCurrentPotm(signal),
-    null,
-    { deps: [user?.id] }
+    null
   );
 
   const [selected, setSelected] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const timer = window.setInterval(reload, 30000);
+    return () => window.clearInterval(timer);
+  }, [reload]);
 
   if (loading && !poll) {
     return <p className="panel p-12 text-center text-white/60">Chargement du vote…</p>;
@@ -61,13 +61,15 @@ const PlayerOfMonthVote: React.FC = () => {
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-sm text-white/60">
           {!open
-            ? 'Le vote est clos. Voici le résultat officiel, basé sur les votes des supporters.'
+            ? 'Le vote est clos. Voici le résultat officiel.'
             : voted
               ? 'Merci, votre vote est enregistré. Voici le score actuel du vote.'
-              : user
-                ? 'Choisissez votre joueur puis validez. Un seul vote par supporter. Le score s’affiche après votre vote.'
-                : 'Connectez-vous pour voter. Un seul vote par supporter.'}
-        </p>      </div>
+              : 'Choisissez votre joueur puis validez. Aucun compte nécessaire : un seul vote par personne.'}
+        </p>
+        <p className="mt-1 text-xs text-white/40">
+          {poll.totalVotes} vote{poll.totalVotes > 1 ? 's' : ''} enregistré{poll.totalVotes > 1 ? 's' : ''} · Résultats en direct
+        </p>
+      </div>
 
       {!open && winner && (
         <div className="mx-auto flex max-w-md items-center gap-5 rounded-[20px] border border-club-yellow/60 bg-club-yellow/10 p-5">
@@ -85,7 +87,7 @@ const PlayerOfMonthVote: React.FC = () => {
         {poll.nominees.map((nominee, index) => {
           const isMine = voted === nominee.id;
           const isPicked = selected === nominee.id;
-          const canPick = open && !voted && Boolean(user);
+          const canPick = open && !voted;
           const leading = reveal && nominee.votes > 0 && index === 0;
           return (
             <button
@@ -146,21 +148,10 @@ const PlayerOfMonthVote: React.FC = () => {
 
       {open && !voted && (
         <div className="flex justify-center">
-          {user ? (
-            <button type="button" onClick={() => void submit()} disabled={!selected || sending} className="btn-yellow disabled:opacity-50">
-              {sending ? <Loader2 size={16} className="animate-spin" /> : <Vote size={16} />}
-              {selected ? 'Valider mon vote' : 'Choisissez un joueur'}
-            </button>
-          ) : (
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/login" state={{ from: `${location.pathname}${location.search}` }} className="btn-yellow">
-                Se connecter pour voter
-              </Link>
-              <Link to="/inscription" state={{ from: `${location.pathname}${location.search}` }} className="btn-ghost">
-                Créer un compte
-              </Link>
-            </div>
-          )}
+          <button type="button" onClick={() => void submit()} disabled={!selected || sending} className="btn-yellow disabled:opacity-50">
+            {sending ? <Loader2 size={16} className="animate-spin" /> : <Vote size={16} />}
+            {selected ? 'Valider mon vote' : 'Choisissez un joueur'}
+          </button>
         </div>
       )}
     </div>

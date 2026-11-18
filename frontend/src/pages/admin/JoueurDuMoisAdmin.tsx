@@ -33,7 +33,10 @@ const JoueurDuMoisAdmin: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<ApiError | null>(null);
 
-  const { data: current, reload: reloadCurrent } = useApiResource<PotmCurrent | null>((signal) => getCurrentPotm(signal), null);
+  const { data: current, reload: reloadCurrent } = useApiResource<PotmCurrent | null>(
+    (signal) => getCurrentPotm(signal, { auth: true }),
+    null
+  );
   const [picked, setPicked] = useState<string | null>(null);
   const [voting, setVoting] = useState(false);
   const [voteError, setVoteError] = useState('');
@@ -43,7 +46,7 @@ const JoueurDuMoisAdmin: React.FC = () => {
     setVoting(true);
     setVoteError('');
     try {
-      await votePotm(current.id, picked);
+      await votePotm(current.id, picked, { auth: true });
       setPicked(null);
       reloadCurrent();
       reload();
@@ -140,7 +143,7 @@ const JoueurDuMoisAdmin: React.FC = () => {
         <div>
           <h2 className="mb-1 text-2xl font-bold text-white">Joueur du mois</h2>
           <p className="text-sm text-white/60">
-            Nommez des joueurs de l’effectif ; les supporters connectés votent une fois depuis Actualités → Joueur du mois.
+            Nommez des joueurs de l’effectif ; chacun peut voter une fois sans compte depuis Actualités → Joueur du mois.
           </p>
         </div>
         <button onClick={openCreate} className="flex items-center justify-center gap-2 rounded-full bg-club-yellow px-5 py-2.5 text-xs font-semibold text-black shadow">

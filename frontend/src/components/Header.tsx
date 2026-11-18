@@ -117,6 +117,8 @@ const Header: React.FC = () => {
   const location = useLocation();
   const headerRef = useRef<HTMLElement>(null);
   const lastScroll = useRef(0);
+  const hideStripRef = useRef(false);
+  const ignoreScrollUntil = useRef(0);
 
   useEffect(() => {
     setOpenMenu(null);
@@ -125,17 +127,33 @@ const Header: React.FC = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = fullscreenOpen ? 'hidden' : '';
+    if (!fullscreenOpen) return undefined;
+    const gutter = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    if (gutter > 0) document.body.style.paddingRight = `${gutter}px`;
     return () => {
       document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
     };
   }, [fullscreenOpen]);
 
   useEffect(() => {
     const onScroll = () => {
       const current = window.scrollY;
-      setHideStrip(current > 80 && current > lastScroll.current);
+      if (Date.now() < ignoreScrollUntil.current) {
+        lastScroll.current = current;
+        return;
+      }
+
+      const delta = current - lastScroll.current;
       lastScroll.current = current;
+      if (Math.abs(delta) < 12) return;
+
+      const next = current > 80 && delta > 0;
+      if (next === hideStripRef.current) return;
+      hideStripRef.current = next;
+      ignoreScrollUntil.current = Date.now() + 400;
+      setHideStrip(next);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);

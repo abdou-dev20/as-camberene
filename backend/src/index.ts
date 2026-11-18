@@ -2,10 +2,12 @@ import config from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import createApp from './app';
 import { seedDefaultAdmin } from './lib/defaultAdmin';
+import { ensurePotmVoteIndexes } from './lib/potmVoteIndexes';
 
 const start = async (): Promise<void> => {
   await connectDatabase();
   console.log('MongoDB connecté');
+  await ensurePotmVoteIndexes();
   await seedDefaultAdmin();
 
   const server = createApp().listen(config.port, () => {

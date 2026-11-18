@@ -30,14 +30,20 @@ export default mongoose.model<IPlayerOfMonth>('PlayerOfMonth', playerOfMonthSche
 export interface IPlayerOfMonthVote extends Document {
   poll: mongoose.Types.ObjectId;
   player: mongoose.Types.ObjectId;
-  user: mongoose.Types.ObjectId;
+  user?: mongoose.Types.ObjectId;
+  voter_key?: string;
+  visitor_id?: string;
+  ip?: string;
 }
 
 const voteSchema = new Schema<IPlayerOfMonthVote>(
   {
     poll: { type: Schema.Types.ObjectId, ref: 'PlayerOfMonth', required: true },
     player: { type: Schema.Types.ObjectId, ref: 'Player', required: true },
-    user: { type: Schema.Types.ObjectId, ref: 'SiteUser', required: true },
+    user: { type: Schema.Types.ObjectId, ref: 'SiteUser' },
+    voter_key: { type: String },
+    visitor_id: { type: String },
+    ip: { type: String },
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: false },
@@ -46,7 +52,7 @@ const voteSchema = new Schema<IPlayerOfMonthVote>(
   }
 );
 
-voteSchema.index({ poll: 1, user: 1 }, { unique: true });
+voteSchema.index({ poll: 1, voter_key: 1 }, { unique: true, sparse: true });
 voteSchema.index({ poll: 1, player: 1 });
 
 export const PlayerOfMonthVote = mongoose.model<IPlayerOfMonthVote>('PlayerOfMonthVote', voteSchema);

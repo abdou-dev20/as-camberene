@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Request, Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import PlayerOfMonth, { PlayerOfMonthVote } from '../models/PlayerOfMonth.model';
@@ -15,11 +15,22 @@ const voteLimiter = rateLimit({
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => req.get('x-visitor-id')?.trim() || req.ip || 'unknown',
   message: {
     success: false,
     message: 'Trop de votes depuis cet appareil. Réessayez plus tard.',
   },
 });
+
+const VISITOR_ID_PATTERN = /^[A-Za-z0-9_-]{8,100}$/;
+
+const voterIdentity = (req: Request): { key: string; visitorId?: string; ip?: string } => {
+  const visitorId = req.get('x-visitor-id')?.trim();
+  if (visitorId && VISITOR_ID_PATTERN.test(visitorId)) {
+    return { key: `v:${visitorId}`, visitorId, ip: req.ip };
+  }
+  return { key: `ip:${req.ip ?? 'unknown'}`, ip: req.ip };
+};
 
 const NOMINEE_FIELDS = 'name photo number line position team';
 
@@ -99,25 +110,24 @@ router.get(
       return Math.round((staffPart + supportersPart) * 100);
     };
 
-    let myVote: string | null = null;
-    if (req.auth) {
-      const vote = await PlayerOfMonthVote.findOne({ poll: poll._id, user: req.auth.userId }).lean();
-      myVote = vote ? String(vote.player) : null;
+    const identity = voterIdentity(req);
+    let ownVote = await PlayerOfMonthVote.findOne({ poll: poll._id, voter_key: identity.key }).lean();
+    if (!ownVote && req.auth) {
+      ownVote = await PlayerOfMonthVote.findOne({ poll: poll._id, user: req.auth.userId }).lean();
     }
+    const myVote = ownVote ? String(ownVote.player) : null;
 
-    const revealResults = poll.status !== 'open' || myVote !== null;
-
-        const withVotes = nominees
-          .map((nominee) => {
-            const tally = counts.get(nominee.id);
-            const points = (tally?.supporters ?? 0) + (tally?.staff ?? 0);
-            return {
-              ...nominee,
-              votes: revealResults ? points : 0,
-              percent: revealResults ? percentOf(tally) : 0,
-            };
-          })
-          .sort((a, b) => b.percent - a.percent || b.votes - a.votes || a.name.localeCompare(b.name, 'fr'));
+    const withVotes = nominees
+      .map((nominee) => {
+        const tally = counts.get(nominee.id);
+        const points = (tally?.supporters ?? 0) + (tally?.staff ?? 0);
+        return {
+          ...nominee,
+          votes: points,
+          percent: percentOf(tally),
+        };
+      })
+      .sort((a, b) => b.percent - a.percent || b.votes - a.votes || a.name.localeCompare(b.name, 'fr'));
 
     let winner: string | null = null;
     if (poll.status === 'closed') {
@@ -135,8 +145,8 @@ router.get(
         title: poll.title,
         status: poll.status,
         nominees: withVotes,
-        totalVotes: revealResults ? totalSupporters + totalStaff : 0,
-        resultsRevealed: revealResults,
+        totalVotes: totalSupporters + totalStaff,
+        resultsRevealed: true,
         myVote,
         winner,
       },
@@ -147,7 +157,7 @@ router.get(
 router.post(
   '/:id/vote',
   voteLimiter,
-  authenticate,
+  optionalAuth,
   handler(async (req, res) => {
     const { player } = await voteSchema.validateAsync(req.body);
     if (!mongoose.isValidObjectId(req.params.id)) throw notFound();
@@ -159,8 +169,16 @@ router.post(
       throw new HttpError(400, 'Ce joueur n’est pas nommé ce mois-ci');
     }
 
+    const identity = voterIdentity(req);
     try {
-      await PlayerOfMonthVote.create({ poll: poll._id, player, user: req.auth!.userId });
+      await PlayerOfMonthVote.create({
+        poll: poll._id,
+        player,
+        voter_key: identity.key,
+        visitor_id: identity.visitorId,
+        ip: identity.ip,
+        user: req.auth?.userId,
+      });
     } catch (error) {
       if ((error as { code?: number }).code === 11000) throw new HttpError(409, 'Vous avez déjà voté ce mois-ci');
       throw error;
