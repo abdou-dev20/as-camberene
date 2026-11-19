@@ -3,7 +3,7 @@ import { Check, Crown, Loader2, Vote } from 'lucide-react';
 import useApiResource from '../hooks/useApiResource';
 import { ApiError } from '../lib/api';
 import { IMAGE_PLACEHOLDER, handleImageError } from '../lib/imagePlaceholder';
-import { getCurrentPotm, monthName, PotmCurrent, votePotm } from '../services/site/playerOfMonth.service';
+import { formatPotmPercent, getCurrentPotm, monthName, PotmCurrent, votePotm } from '../services/site/playerOfMonth.service';
 
 const PlayerOfMonthVote: React.FC = () => {
   const { data: poll, loading, reload } = useApiResource<PotmCurrent | null>(
@@ -122,7 +122,7 @@ const PlayerOfMonthVote: React.FC = () => {
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div
                       className={`h-full rounded-full ${leading ? 'bg-club-yellow' : 'bg-white/40'}`}
-                      style={{ width: `${nominee.percent}%` }}
+                      style={{ width: `${Math.min(100, nominee.percent)}%` }}
                     />
                   </div>
                 )}
@@ -136,7 +136,7 @@ const PlayerOfMonthVote: React.FC = () => {
 
               {reveal && (
                 <div className="flex shrink-0 flex-col items-end">
-                  <span className="text-2xl font-extrabold text-club-yellow">{nominee.percent}%</span>
+                  <span className="text-2xl font-extrabold text-club-yellow">{formatPotmPercent(nominee.percent)}%</span>
                 </div>
               )}
             </button>

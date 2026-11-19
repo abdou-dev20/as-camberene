@@ -34,7 +34,7 @@ const voterIdentity = (req: Request): { key: string; visitorId?: string; ip?: st
 
 const NOMINEE_FIELDS = 'name photo number line position team';
 
-const STAFF_SHARE = 0.5;
+const VOTE_WEIGHT = 0.5;
 
 interface VoteTally {
   staff: number;
@@ -70,6 +70,9 @@ const countVotes = async (pollId: mongoose.Types.ObjectId) => {
   );
 };
 
+const bonusMap = (bonuses: { player: mongoose.Types.ObjectId; points: number }[] = []) =>
+  new Map(bonuses.map((bonus) => [String(bonus.player), bonus.points]));
+
 const shapeNominee = (player: { _id: unknown; name?: string; photo?: string; number?: number; line?: string; position?: string }) => ({
   id: String(player._id),
   name: player.name ?? '',
@@ -103,12 +106,13 @@ router.get(
     const totalSupporters = [...counts.values()].reduce((sum, tally) => sum + tally.supporters, 0);
     const totalStaff = [...counts.values()].reduce((sum, tally) => sum + tally.staff, 0);
 
+    const bonuses = bonusMap(poll.bonuses);
     const percentOf = (tally: VoteTally | undefined): number => {
       if (!tally) return 0;
-      const staffPart = totalStaff > 0 ? STAFF_SHARE * (tally.staff / totalStaff) : 0;
-      const supportersPart = totalSupporters > 0 ? (1 - (totalStaff > 0 ? STAFF_SHARE : 0)) * (tally.supporters / totalSupporters) : 0;
-      return Math.round((staffPart + supportersPart) * 100);
+      return Math.round((tally.supporters + tally.staff) * VOTE_WEIGHT * 10) / 10;
     };
+    const scoreOf = (playerId: string, tally?: VoteTally): number =>
+      Math.round((percentOf(tally) + (bonuses.get(playerId) ?? 0)) * 10) / 10;
 
     const identity = voterIdentity(req);
     let ownVote = await PlayerOfMonthVote.findOne({ poll: poll._id, voter_key: identity.key }).lean();
@@ -124,7 +128,8 @@ router.get(
         return {
           ...nominee,
           votes: points,
-          percent: percentOf(tally),
+          bonus: bonuses.get(nominee.id) ?? 0,
+          percent: scoreOf(nominee.id, tally),
         };
       })
       .sort((a, b) => b.percent - a.percent || b.votes - a.votes || a.name.localeCompare(b.name, 'fr'));
@@ -132,7 +137,7 @@ router.get(
     let winner: string | null = null;
     if (poll.status === 'closed') {
       const best = [...counts.entries()].sort(
-        (a, b) => percentOf(b[1]) - percentOf(a[1])
+        (a, b) => scoreOf(b[0], b[1]) - scoreOf(a[0], a[1])
       )[0];
       winner = best ? best[0] : null;
     }
@@ -200,20 +205,23 @@ router.get(
         const counts = await countVotes(poll._id);
         const totalSupporters = [...counts.values()].reduce((sum, tally) => sum + tally.supporters, 0);
         const totalStaff = [...counts.values()].reduce((sum, tally) => sum + tally.staff, 0);
+        const bonuses = bonusMap(poll.bonuses);
         const percentOf = (tally: VoteTally | undefined): number => {
           if (!tally) return 0;
-          const staffPart = totalStaff > 0 ? STAFF_SHARE * (tally.staff / totalStaff) : 0;
-          const supportersPart = totalSupporters > 0 ? (1 - (totalStaff > 0 ? STAFF_SHARE : 0)) * (tally.supporters / totalSupporters) : 0;
-          return Math.round((staffPart + supportersPart) * 100);
+          return Math.round((tally.supporters + tally.staff) * VOTE_WEIGHT * 10) / 10;
         };
+        const scoreOf = (playerId: string, tally?: VoteTally): number =>
+          Math.round((percentOf(tally) + (bonuses.get(playerId) ?? 0)) * 10) / 10;
         const results = (poll.nominees as unknown as Parameters<typeof shapeNominee>[0][])
           .filter(Boolean)
           .map((nominee) => {
-            const tally = counts.get(String(nominee._id));
+            const id = String(nominee._id);
+            const tally = counts.get(id);
             return {
               ...shapeNominee(nominee),
               votes: (tally?.supporters ?? 0) + (tally?.staff ?? 0),
-              percent: percentOf(tally),
+              bonus: bonuses.get(id) ?? 0,
+              percent: scoreOf(id, tally),
             };
           })
           .sort((a, b) => b.percent - a.percent || b.votes - a.votes || a.name.localeCompare(b.name));
@@ -256,6 +264,17 @@ router.put(
     const value = await updatePotmSchema.validateAsync(req.body, { stripUnknown: true });
     if (!mongoose.isValidObjectId(req.params.id)) throw notFound();
     if (value.nominees) await assertNomineesExist(value.nominees);
+
+    if (value.bonuses) {
+      const existing = await PlayerOfMonth.findById(req.params.id).select('nominees').lean();
+      if (!existing) throw notFound('Élection introuvable');
+      const allowed = new Set(
+        (value.nominees ?? existing.nominees).map((id: mongoose.Types.ObjectId | string) => String(id))
+      );
+      if ((value.bonuses as { player: mongoose.Types.ObjectId | string }[]).some((bonus) => !allowed.has(String(bonus.player)))) {
+        throw new HttpError(400, 'Le bonus doit concerner un joueur nommé ce mois-ci');
+      }
+    }
 
     const poll = await PlayerOfMonth.findByIdAndUpdate(req.params.id, value, { new: true, runValidators: true });
     if (!poll) throw notFound('Élection introuvable');

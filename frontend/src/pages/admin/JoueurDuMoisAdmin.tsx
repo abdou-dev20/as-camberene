@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Crown, Lock, Pencil, Plus, Trash2, Unlock, Vote, X } from 'lucide-react';
+import { Check, Crown, Lock, Pencil, Plus, Sparkles, Trash2, Unlock, Vote, X } from 'lucide-react';
 import useApiResource from '../../hooks/useApiResource';
 import useEditableResource from '../../hooks/useEditableResource';
 import { useTeams } from '../../hooks/useContent';
@@ -7,6 +7,7 @@ import { teamMembers as teamMembersApi, TeamMemberRecord } from '../../services/
 import {
   createPotm,
   deletePotm,
+  formatPotmPercent,
   getCurrentPotm,
   listPotm,
   monthName,
@@ -40,6 +41,41 @@ const JoueurDuMoisAdmin: React.FC = () => {
   const [picked, setPicked] = useState<string | null>(null);
   const [voting, setVoting] = useState(false);
   const [voteError, setVoteError] = useState('');
+  const [bonusPoll, setBonusPoll] = useState<PotmAdmin | null>(null);
+  const [bonusForm, setBonusForm] = useState<Record<string, number>>({});
+
+  const openBonus = (poll: PotmAdmin) => {
+    setActionError(null);
+    setBonusPoll(poll);
+    setBonusForm(Object.fromEntries(poll.results.map((row) => [row.id, row.bonus])));
+  };
+
+  const addBonus = (playerId: string, amount: number) => {
+    setBonusForm((form) => ({
+      ...form,
+      [playerId]: Math.min(100, Math.round(((form[playerId] ?? 0) + amount) * 10) / 10),
+    }));
+  };
+
+  const saveBonus = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!bonusPoll) return;
+    const ok = await run(() =>
+      updatePotm(
+        bonusPoll.id,
+        {
+          bonuses: bonusPoll.results.map((row) => ({
+            player: row.id,
+            points: Math.round(Number(bonusForm[row.id] ?? 0) * 10) / 10,
+          })),
+        }
+      )
+    );
+    if (ok) {
+      setBonusPoll(null);
+      reloadCurrent();
+    }
+  };
 
   const castVote = async () => {
     if (!current || !picked) return;
@@ -250,6 +286,9 @@ const JoueurDuMoisAdmin: React.FC = () => {
                     <button onClick={() => openEdit(poll)} disabled={busy} className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-white hover:bg-white/20">
                       <Pencil size={12} /> Nommés
                     </button>
+                    <button onClick={() => openBonus(poll)} disabled={busy} className="flex items-center gap-1.5 rounded-full bg-club-yellow/15 px-3 py-1.5 text-club-yellow hover:bg-club-yellow/25">
+                      <Sparkles size={12} /> Bonus
+                    </button>
                     <button onClick={() => remove(poll)} disabled={busy} className="flex items-center gap-1.5 rounded-full bg-red-500/30 px-3 py-1.5 text-red-200 hover:bg-red-500/40">
                       <Trash2 size={12} /> Supprimer
                     </button>
@@ -269,13 +308,18 @@ const JoueurDuMoisAdmin: React.FC = () => {
                             <span className="flex min-w-0 items-center gap-1.5 truncate text-white">
                               {leading && <Crown size={13} className="shrink-0 text-club-yellow" />}
                               {row.name}
+                              {row.bonus > 0 && (
+                                <span className="shrink-0 rounded-full bg-club-yellow/15 px-1.5 py-0.5 text-[10px] text-club-yellow">
+                                  +{formatPotmPercent(row.bonus)} %
+                                </span>
+                              )}
                             </span>
                             <span className="shrink-0 text-xs text-white/70">
-                              <strong className="text-white">{row.votes}</strong> · {share} %
+                              <strong className="text-white">{row.votes}</strong> · {formatPotmPercent(share)} %
                             </span>
                           </div>
                           <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
-                            <div className={`h-full rounded-full ${leading ? 'bg-club-yellow' : 'bg-white/40'}`} style={{ width: `${share}%` }} />
+                            <div className={`h-full rounded-full ${leading ? 'bg-club-yellow' : 'bg-white/40'}`} style={{ width: `${Math.min(100, share)}%` }} />
                           </div>
                         </div>
                       </li>
@@ -338,6 +382,73 @@ const JoueurDuMoisAdmin: React.FC = () => {
                 <button type="button" onClick={() => setModalOpen(false)} className="rounded-full bg-white/5 px-4 py-2 text-white/70 hover:bg-white/10">Annuler</button>
                 <button type="submit" disabled={busy || form.nominees.length < 2} className="rounded-full bg-club-yellow px-5 py-2 font-semibold text-black disabled:opacity-60">
                   {busy ? 'Enregistrement…' : editing ? 'Mettre à jour' : 'Ouvrir le vote'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {bonusPoll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-graphite/90 backdrop-blur-sm" onClick={() => setBonusPoll(null)} />
+          <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.05] p-6">
+            <button onClick={() => setBonusPoll(null)} className="absolute right-3 top-3 text-white/60 hover:text-white"><X size={16} /></button>
+            <h3 className="mb-1 text-lg font-semibold text-white">Bonus de score — {monthName(bonusPoll.month)}</h3>
+            <p className="mb-4 text-xs text-white/50">
+              Chaque vote vaut 0,5 %. Le bonus s’ajoute directement en points de pourcentage.
+            </p>
+            <form onSubmit={saveBonus} className="space-y-3 text-xs">
+              {bonusPoll.results.map((row) => (
+                <div key={row.id} className="rounded-lg bg-white/5 px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-white">{row.name}</span>
+                      <span className="block text-white/50">
+                        {row.votes} vote{row.votes > 1 ? 's' : ''} · {formatPotmPercent(row.percent)} %
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={bonusForm[row.id] ?? 0}
+                        onChange={(event) => setBonusForm((form) => ({ ...form, [row.id]: Number(event.target.value) }))}
+                        className="w-20 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-right text-white outline-none focus:border-club-yellow"
+                      />
+                      <span className="text-white/50">%</span>
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {[10, 20, 30, 50].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => addBonus(row.id, value)}
+                        className="rounded-full bg-club-yellow/15 px-2.5 py-1 text-[11px] font-semibold text-club-yellow hover:bg-club-yellow/25"
+                      >
+                        +{value} %
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setBonusForm((form) => ({ ...form, [row.id]: 0 }))}
+                      className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] text-white/60 hover:bg-white/10"
+                    >
+                      Remettre à 0
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {actionError && <p className="text-red-300">{actionError.fullMessage}</p>}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setBonusPoll(null)} className="rounded-full bg-white/5 px-4 py-2 text-white/70 hover:bg-white/10">Annuler</button>
+                <button type="submit" disabled={busy} className="rounded-full bg-club-yellow px-5 py-2 font-semibold text-black disabled:opacity-60">
+                  {busy ? 'Enregistrement…' : 'Appliquer les bonus'}
                 </button>
               </div>
             </form>

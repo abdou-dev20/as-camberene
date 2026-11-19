@@ -3,11 +3,17 @@ import mongoose, { Document, Schema } from 'mongoose';
 export const POTM_STATUSES = ['open', 'closed'] as const;
 export type PotmStatus = (typeof POTM_STATUSES)[number];
 
+export interface IPotmBonus {
+  player: mongoose.Types.ObjectId;
+  points: number;
+}
+
 export interface IPlayerOfMonth extends Document {
   _id: mongoose.Types.ObjectId;
   month: string;
   title: string;
   nominees: mongoose.Types.ObjectId[];
+  bonuses: IPotmBonus[];
   status: PotmStatus;
 }
 
@@ -16,6 +22,12 @@ const playerOfMonthSchema = new Schema<IPlayerOfMonth>(
     month: { type: String, required: true, unique: true, match: /^\d{4}-\d{2}$/ },
     title: { type: String, trim: true, maxlength: 150, default: '' },
     nominees: [{ type: Schema.Types.ObjectId, ref: 'Player' }],
+    bonuses: [
+      {
+        player: { type: Schema.Types.ObjectId, ref: 'Player', required: true },
+        points: { type: Number, required: true, min: 0, max: 100 },
+      },
+    ],
     status: { type: String, enum: POTM_STATUSES, default: 'open', index: true },
   },
   {

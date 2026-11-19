@@ -20,6 +20,14 @@ export const updatePotmSchema = Joi.object({
   nominees: Joi.array().items(objectId).min(2).max(12).unique().messages({
     'array.min': 'Nommez au moins deux joueurs',
   }),
+  bonuses: Joi.array()
+    .items(
+      Joi.object({
+        player: objectId.required(),
+        points: Joi.number().min(0).max(100).precision(1).default(0),
+      })
+    )
+    .unique((a, b) => String(a.player) === String(b.player)),
   status: Joi.string().valid(...POTM_STATUSES),
 }).min(1);
 

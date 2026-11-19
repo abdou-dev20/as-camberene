@@ -13,6 +13,7 @@ export interface PotmNominee {
 
 export interface PotmCurrentNominee extends PotmNominee {
   votes: number;
+  bonus: number;
   percent: number;
 }
 
@@ -34,7 +35,7 @@ export interface PotmAdmin {
   title: string;
   status: 'open' | 'closed';
   totalVotes: number;
-  results: (PotmNominee & { votes: number; percent: number })[];
+  results: (PotmNominee & { votes: number; bonus: number; percent: number })[];
 }
 
 const withPhoto = <T extends PotmNominee>(nominee: T): T => ({ ...nominee, photo: siteMediaUrl(nominee.photo) });
@@ -59,10 +60,21 @@ export const listPotm = async (signal?: AbortSignal): Promise<PotmAdmin[]> => {
 export const createPotm = (payload: { month: string; title: string; nominees: string[]; status: 'open' | 'closed' }) =>
   siteApi.post('/player-of-month', payload, { auth: true });
 
-export const updatePotm = (id: string, payload: Partial<{ title: string; nominees: string[]; status: 'open' | 'closed' }>) =>
+export const updatePotm = (
+  id: string,
+  payload: Partial<{
+    title: string;
+    nominees: string[];
+    bonuses: { player: string; points: number }[];
+    status: 'open' | 'closed';
+  }>
+) =>
   siteApi.put(`/player-of-month/${id}`, payload, { auth: true });
 
 export const deletePotm = (id: string) => siteApi.del(`/player-of-month/${id}`, { auth: true });
+
+export const formatPotmPercent = (value: number): string =>
+  new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(value);
 
 export const monthName = (month: string): string => {
   const label = formatMonthYear(`${month}-15`);
